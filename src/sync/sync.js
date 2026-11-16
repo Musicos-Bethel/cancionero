@@ -38,8 +38,8 @@ export async function syncFrom(source, { onProgress } = {}) {
   const records = [];
   const staleBlobs = [];
   await pool(changed, 6, async (r) => {
-    const { section, ext, kind } = r.info;
-    const rec = { path: r.path, origin: 'remote', source: source.id, section, ext, kind, etag: r.etag, size: r.size ?? 0 };
+    const { section, ext, kind, depth } = r.info;
+    const rec = { path: r.path, origin: 'remote', source: source.id, section, ext, kind, depth, etag: r.etag, size: r.size ?? 0 };
     if (isBinaryKind(kind)) {
       if (localByPath.has(r.path)) staleBlobs.push(r.path);
     } else {

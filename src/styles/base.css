@@ -94,6 +94,15 @@
 }
 
 * { box-sizing: border-box; }
+/* Nada puede ensanchar la página: si algo sobresale en horizontal, el móvil
+   la reduce para que quepa (Pixel 8a) o, tras hacer zoom, vuelve desplazada a
+   la izquierda (Android e iPhone). `clip` no crea zona de desplazamiento y no
+   rompe position: sticky. Respaldo para navegadores antiguos: `hidden` solo
+   en html (en body convertiría el body en la zona de desplazamiento). */
+html { overflow-x: hidden; }
+@supports (overflow: clip) {
+  html, body { overflow-x: clip; }
+}
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -211,7 +220,9 @@ main {
 .view { position: relative; }
 .page-head { margin: 2px 0 14px; }
 .page-head h1 { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: 0.01em; }
-.page-head > .segmented { margin-top: 12px; }
+.page-head > .segmented, .page-head > .section-switch { margin-top: 12px; }
+.section-switch { display: flex; flex-direction: column; gap: 8px; }
+.page-head .segmented.sub-seg { max-width: 260px; }
 .page-sub { color: var(--text-2); margin: 4px 0 0; font-size: 15px; }
 .group-title, .section-title {
   font-size: 20px;
@@ -223,15 +234,16 @@ main {
 .group-title.letter { font-size: 15px; font-weight: 600; color: var(--text-2); margin: 18px 4px 6px; }
 .group-footer { font-size: 13px; color: var(--text-2); margin: 8px 16px 0; }
 
-/* Resplandor dorado del inicio (para que el cristal tenga algo que reflejar) */
+/* Resplandor dorado del inicio (para que el cristal tenga algo que reflejar).
+   Antes medía el 140 % del ancho y sobresalía por la derecha: eso ensanchaba la
+   página. Ahora llega justo al borde de la pantalla y se desvanece antes. */
 .home-glow {
   position: absolute;
-  left: 50%;
+  left: calc(-1 * max(16px, var(--safe-left)));
+  right: calc(-1 * max(16px, var(--safe-right)));
   top: calc(-120px - var(--safe-top));
-  width: 140%;
   height: 420px;
-  transform: translateX(-50%);
-  background: radial-gradient(closest-side, rgba(221, 166, 13, 0.16), rgba(221, 166, 13, 0.05) 60%, transparent);
+  background: radial-gradient(farthest-side, rgba(221, 166, 13, 0.16), rgba(221, 166, 13, 0.05) 60%, transparent);
   pointer-events: none;
   z-index: 0;
 }
@@ -516,6 +528,19 @@ a.row:active, .card:active, .quick-item:active, .hero-song:active { background: 
   display: flex;
   align-items: stretch;
   padding: 4px;
+  /* La barra no desplaza la página: así un toque con algo de movimiento no se
+     convierte en desplazamiento y se pierde. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Zona táctil algo mayor que la cápsula (sobre todo por arriba). */
+.tabbar::after {
+  content: '';
+  position: absolute;
+  inset: -14px -8px -10px;
+  z-index: -1;
 }
 .tab {
   position: relative;
@@ -678,3 +703,4 @@ details.review ul { margin: 8px 0 0; padding-left: 20px; color: var(--text-2); f
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+.tab:active { opacity: 0.65; }

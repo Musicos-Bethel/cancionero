@@ -3,7 +3,7 @@ import { decodeText, splitPath, normalize } from '../util/text.js';
 import { songMeta } from '../chordpro/song-doc.js';
 import { splitSongs, safeName } from '../chordpro/split.js';
 import { reloadLibrary, state } from '../state.js';
-import { sectionOfFolder } from '../library/library.js';
+import { sectionOfFolder, metalOfFolder, SECTIONS } from '../library/library.js';
 
 /**
  * Importar canciones solo en este dispositivo (nunca se suben ni van al
@@ -11,11 +11,12 @@ import { sectionOfFolder } from '../library/library.js';
  *  - .cho .chopro .chordpro .pro .crd .txt, PDF e imágenes
  *  - varios archivos a la vez, o un .zip (por ejemplo una carpeta de OneDrive
  *    descargada como .zip): sus subcarpetas se convierten en categorías y, si
- *    tiene carpetas «Voces» y «Batería», se respetan
+ *    tiene carpetas «Voces», «Batería» o «Metales» (con «Saxofon» y «Trompeta»
+ *    dentro), se respetan
  *  - archivos con varias canciones separadas por {new_song}
  * En iOS el selector no se filtra por extensión (deshabilitaría .pro/.cho).
  */
-const FOLDER = { voces: 'Voces', bateria: 'Bateria' };
+const FOLDER = { voces: 'Voces', bateria: 'Bateria', saxofon: 'Saxofon', trompeta: 'Trompeta', metales: 'Metales' };
 const TEXT = /^(pro|chordpro|cho|chopro|crd|txt)$/;
 const IMG = /^(jpe?g|png|webp|gif)$/;
 const MIME = { pdf: 'application/pdf', png: 'image/png', webp: 'image/webp', gif: 'image/gif', jpg: 'image/jpeg', jpeg: 'image/jpeg' };
@@ -46,13 +47,14 @@ async function expand(fileList, onProgress) {
 
 /**
  * @param {FileList|File[]} fileList
- * @param {'voces'|'bateria'} section  sección por defecto
+ * @param {'voces'|'bateria'|'saxofon'|'trompeta'} section  sección por defecto
  * @param {{ duplicates: 'replace'|'skip', onProgress?: (msg) => void }} opts
  */
 export async function importFiles(fileList, section, { duplicates = 'replace', onProgress } = {}) {
   const res = { added: 0, replaced: 0, skipped: 0, unsupported: [] };
   const entries = await expand([...fileList], onProgress);
-  const existing = { voces: new Set(state.library.songs.voces.map((s) => s.id)), bateria: new Set(state.library.songs.bateria.map((s) => s.id)) };
+  const existing = Object.fromEntries(SECTIONS.map((sec) => [sec, new Set(state.library.songs[sec].map((s) => s.id))]));
+  existing.metales = new Set();
   const records = [];
   let done = 0;
 
@@ -61,11 +63,19 @@ export async function importFiles(fileList, section, { duplicates = 'replace', o
     const dirs = rel.split('/').slice(0, -1);
     const fileName = rel.split('/').pop();
     const { base, ext } = splitPath(fileName);
-    // Carpetas «Voces»/«Batería» dentro del .zip mandan sobre la sección elegida.
+    // Carpetas «Voces»/«Batería»/«Metales» dentro del .zip mandan sobre la sección elegida.
     let sec = section;
     const first = dirs[0] && sectionOfFolder(dirs[0]);
     if (first === 'voces' || first === 'bateria') {
       sec = first;
+      dirs.shift();
+    } else if (first === 'metales') {
+      dirs.shift();
+      const metal = dirs.length && metalOfFolder(dirs[0]);
+      sec = metal || 'metales'; // fuera de la carpeta de un instrumento: general
+      if (metal) dirs.shift();
+    } else if (dirs.length && metalOfFolder(dirs[0]) && (section === 'saxofon' || section === 'trompeta')) {
+      sec = metalOfFolder(dirs[0]);
       dirs.shift();
     }
     const kind = TEXT.test(ext) ? 'text' : ext === 'pdf' ? 'pdf' : IMG.test(ext) ? 'image' : null;

@@ -4,7 +4,7 @@ import { toast } from '../ui/toast.js';
 import { openSheet } from '../ui/dialog.js';
 import { state, subscribe, setSettings, currentSource } from '../state.js';
 import * as db from '../db.js';
-import { resolveItem, drumVersion, vocesVersion, SECTION_SHORT, SECTION_LABEL } from '../library/library.js';
+import { resolveItem, partVersion, vocesVersion, SECTION_SHORT, SECTION_LABEL, PARTS, missingPartLabel, isMetal, writtenOffset, instrumentTuning, TUNING_PC } from '../library/library.js';
 import { loadSongDoc } from '../chordpro/song-doc.js';
 import { firstChord } from '../chordpro/parser.js';
 import { renderSong } from '../viewers/chordpro-view.js';
@@ -85,9 +85,12 @@ export function SongView({ section, id, query, backHref }) {
     return false;
   };
 
-  // Otra versión (voces ⇄ batería).
-  const other = song.section === 'voces' ? drumVersion(lib, song) : vocesVersion(lib, song);
-  const otherHref = other ? (list ? songUrl(list, index, other, { ver: other.section }) : songUrl(null, 0, other)) : null;
+  // Otras versiones: desde voces, las partituras de batería y metales; desde una
+  // partitura, la de voces y las de los demás instrumentos.
+  const vocesSong = song.section === 'voces' ? song : vocesVersion(lib, song);
+  const others = [vocesSong, ...PARTS.map((p) => partVersion(lib, vocesSong, p))].filter((o) => o && o.section !== song.section);
+  const otherHref = (o) => (list ? songUrl(list, index, o, { ver: o.section }) : songUrl(null, 0, o));
+  const OTHER_ICON = { voces: 'mic', bateria: 'drum', saxofon: 'horn', trompeta: 'horn' };
 
   const cleanups = [];
   const scroller = h('div.song-scroll', { tabindex: '-1' });
@@ -119,7 +122,7 @@ export function SongView({ section, id, query, backHref }) {
   const moreBtn = h('button.cap-btn', { 'aria-label': 'Más opciones', onclick: () => moreSheet() }, icon('more', { size: 21 }));
   const notes = h(
     'div.float-notes',
-    fallback ? h('div.note-pill.warn', icon('alert', { size: 15 }), 'Sin versión de batería: se muestra la de voces') : null,
+    fallback ? h('div.note-pill.warn', icon('alert', { size: 15 }), `${missingPartLabel(ver || state.settings.section)}: se muestra la de voces`) : null,
     item?.notes ? h('div.note-pill', icon('text', { size: 15 }), item.notes) : null,
   );
   const topFloat = h(
@@ -306,15 +309,15 @@ export function SongView({ section, id, query, backHref }) {
         icon(isImmersive() ? 'shrink' : 'expand', { size: 20 }),
         h('span.sheet-row-label', isImmersive() ? 'Salir de pantalla completa' : 'Pantalla completa'),
       ),
-      otherHref
-        ? h(
-            'a.sheet-row.action',
-            { href: otherHref, onclick: () => s.close() },
-            icon(other.section === 'bateria' ? 'drum' : 'mic', { size: 20 }),
-            h('span.sheet-row-label', `Ver versión de ${SECTION_LABEL[other.section].toLowerCase()}`),
-            icon('next', { size: 16, cls: 'icon chev' }),
-          )
-        : null,
+      ...others.map((o) =>
+        h(
+          'a.sheet-row.action',
+          { href: otherHref(o), onclick: () => s.close() },
+          icon(OTHER_ICON[o.section], { size: 20 }),
+          h('span.sheet-row-label', `Ver versión de ${o.section === 'voces' ? 'voces' : SECTION_SHORT[o.section].toLowerCase()}`),
+          icon('next', { size: 16, cls: 'icon chev' }),
+        ),
+      ),
     ];
     const s = openSheet({ title: song.title, subtitle: [song.artist, SECTION_LABEL[song.section]].filter(Boolean).join(' · '), body: [h('div.group.sheet-group', rows)] });
   }
@@ -330,13 +333,24 @@ export function SongView({ section, id, query, backHref }) {
   async function initChordPro(prefs) {
     const file = state.files.find((f) => f.path === song.path);
     const doc = loadSongDoc(file?.text ?? '', song.ext);
-    const ctxKey = list ? `${list.id}|${song.key}` : null;
+    // Metales: la partitura propia está escrita en el tono del instrumento; si se
+    // muestra la de voces (no hay partitura), se transporta para el instrumento.
+    const playing = song.section === 'voces' && item ? ver || state.settings.section : song.section;
+    const tuning = isMetal(playing) ? instrumentTuning(playing, state.settings) : null;
+    const offset = writtenOffset(playing, state.settings);
+    const ctxKey = list ? `${list.id}|${song.key}${offset ? '|' + playing + tuning : ''}` : null;
     const ctx = ctxKey ? await db.prefGet(ctxKey) : {};
 
     const written = parseKey(doc.meta.key) ?? parseKey(firstChord(doc) ?? '');
     const fileCapo = Math.max(0, parseInt(doc.meta.capo, 10) || 0);
     const listTarget = item?.key ? parseKey(item.key) : null;
-    const listShift = listTarget && written ? semitoneDiff(written.pc + fileCapo, listTarget.pc) : 0;
+    const listShift = !written
+      ? 0
+      : listTarget
+        ? semitoneDiff(written.pc + fileCapo, listTarget.pc + offset)
+        : song.section === 'voces'
+          ? semitoneDiff(0, offset)
+          : 0;
     const defaultTranspose = ctxKey ? listShift : 0;
     let transpose = (ctxKey ? ctx.transpose : prefs.transpose) ?? defaultTranspose;
     let capo = prefs.capo ?? fileCapo;
@@ -361,6 +375,7 @@ export function SongView({ section, id, query, backHref }) {
 
       const meta = [];
       if (sounding) meta.push(`Tono ${sounding}${transpose !== defaultTranspose ? ` (${transpose > 0 ? '+' : ''}${transpose})` : listTarget && transpose === listShift ? ' de la lista' : ''}`);
+      if (tuning && written) meta.push(`Para ${SECTION_SHORT[playing].toLowerCase()} en ${prettyKey(keyName({ pc: TUNING_PC[tuning], minor: false }, 0, notation))}`);
       if (capo > 0 && written) meta.push(`Capo ${capo}, formas de ${prettyKey(keyName(written, shift, notation))}`);
       if (doc.meta.tempo) meta.push(`${doc.meta.tempo} bpm`);
       if (doc.meta.time) meta.push(doc.meta.time);

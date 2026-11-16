@@ -2,7 +2,7 @@ import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { link, listCard, emptyState, pageHeader, songRow, displayKey, pendingChip, sectionSwitch } from '../ui/components.js';
 import { todayISO } from '../util/text.js';
-import { resolveItem, SECTION_LABEL } from '../library/library.js';
+import { resolveItem, SECTION_LABEL, missingPartLabel } from '../library/library.js';
 import { longDate, relativeDay, plural } from '../ui/format.js';
 import { icon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
@@ -149,7 +149,7 @@ export function ListDetailView({ id }) {
               number: i + 1,
               keyLabel: displayKey(it.key),
               note: it.notes,
-              warn: !song ? 'No encontrada en la biblioteca' : fallback ? 'Sin versión de batería: se abre la de voces' : '',
+              warn: !song ? 'No encontrada en la biblioteca' : fallback ? `${missingPartLabel(section)}: se abre la de voces` : '',
             }),
           ),
         )

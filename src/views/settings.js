@@ -13,7 +13,7 @@ import { currentSource, reloadLibrary, emitChange } from '../state.js';
 import * as db from '../db.js';
 import { WRITE_TARGET } from '../config.js';
 import { glassReason } from '../features/glass.js';
-import { linkReport, SECTION_LABEL } from '../library/library.js';
+import { linkReport, SECTION_LABEL, SECTION_SHORT, SECTIONS, isMetal } from '../library/library.js';
 import { pageHeader, link } from '../ui/components.js';
 import { timeAgo, plural } from '../ui/format.js';
 import { todayISO } from '../util/text.js';
@@ -54,7 +54,18 @@ export function SettingsView() {
     el.append(
       card(
         'Lectura',
-        row('Sección', 'Qué parte del cancionero ves por defecto.', segmented('Sección', s.section, [['voces', 'Voces'], ['bateria', 'Batería']], (v) => setSettings({ section: v }))),
+        row(
+          'Sección',
+          'Qué parte del cancionero ves por defecto.',
+          segmented('Sección', s.section, [['voces', 'Voces'], ['bateria', 'Batería'], ['saxofon', 'Saxo'], ['trompeta', 'Trompeta']], (v) =>
+            setSettings(isMetal(v) ? { section: v, metal: v } : { section: v }),
+          ),
+        ),
+        row(
+          'Saxofón',
+          'Afinación del saxo para transportar los tonos de la lista.',
+          segmented('Saxofón', s.saxTuning, [['Eb', 'Mi♭ (alto)'], ['Bb', 'Si♭ (tenor)']], (v) => setSettings({ saxTuning: v })),
+        ),
         row('Notación de acordes', s.notation === 'latin' ? 'Do Re Mi Fa Sol La Si' : 'C D E F G A B', segmented('Notación', s.notation, [['american', 'C D E'], ['latin', 'Do Re Mi']], (v) => setSettings({ notation: v }))),
         row('Tema', null, segmented('Tema', s.theme, [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']], (v) => setSettings({ theme: v }))),
         row(
@@ -229,6 +240,7 @@ export function SettingsView() {
         layoutField('root', 'Carpeta del cancionero', 'Por ejemplo: SongBook'),
         layoutField('voces', 'Canciones de voces e instrumentos', 'Vacío = toda la carpeta (las subcarpetas son categorías)'),
         layoutField('bateria', 'Partituras de batería', 'Por ejemplo: Partituras batería'),
+        layoutField('metales', 'Partituras de metales', 'Dentro, una carpeta por instrumento: Saxofon y Trompeta'),
         layoutField('enlaces', 'Enlaces para escuchar', 'Por ejemplo: Enlaces'),
         h(
           'p.set-desc',
@@ -240,7 +252,11 @@ export function SettingsView() {
     );
 
     // Importar
-    const sectionSel = h('select', { 'aria-label': 'Sección', value: s.section }, h('option', { value: 'voces' }, SECTION_LABEL.voces), h('option', { value: 'bateria' }, SECTION_LABEL.bateria));
+    const sectionSel = h(
+      'select',
+      { 'aria-label': 'Sección', value: s.section },
+      SECTIONS.map((sec) => h('option', { value: sec, selected: sec === s.section }, SECTION_LABEL[sec])),
+    );
     let duplicates = 'replace';
     const dupSwitch = segmented('Si ya existe', duplicates, [['replace', 'Reemplazar'], ['skip', 'Omitir']], (v) => {
       duplicates = v;
@@ -285,7 +301,7 @@ export function SettingsView() {
           h('li', h('strong', 'Desde OneDrive: '), 'elige los archivos en el selector, o descarga una carpeta como .zip: sus subcarpetas se convierten en categorías.'),
           h('li', 'Formatos: .cho, .chopro, .chordpro, .pro, .crd, .txt, PDF, imágenes y .zip. Respeta tildes y ñ de archivos antiguos.'),
         ),
-        row('Sección', 'Si el .zip trae carpetas «Voces» y «Batería», se respetan.', sectionSel),
+        row('Sección', 'Si el .zip trae carpetas «Voces», «Batería» o «Metales» (con «Saxofon» y «Trompeta» dentro), se respetan.', sectionSel),
         row('Si la canción ya existe', null, dupSwitch),
         status,
         h(
@@ -312,9 +328,10 @@ export function SettingsView() {
     el.append(
       card(
         'Revisión de nombres',
-        h('p.set-desc', 'La versión de batería se empareja por nombre de archivo (o con {x_bateria: …} en el archivo de voces).'),
+        h('p.set-desc', 'Las partituras de batería y metales se emparejan con la canción por nombre de archivo (la de batería también con {x_bateria: …} en el archivo de voces).'),
         details('Voces sin versión de batería', rep.vocesSinBateria, (s) => s.title),
         details('Batería sin canción de voces', rep.bateriaSinVoces, (s) => s.name),
+        details('Metales sin canción de voces', rep.metalesSinVoces, (s) => `${s.name} (${SECTION_SHORT[s.section].toLowerCase()})`),
         details('Canciones de listas no encontradas', rep.noEncontradas, (x) => `${x.item.name} — ${x.list.name}`),
         details('Archivos repetidos', rep.duplicados, (s) => s.path),
       ),

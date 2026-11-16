@@ -29,11 +29,14 @@ export const WRITE_TARGET = {
  * Estructura de carpetas de la biblioteca (rutas relativas a la carpeta raíz).
  * Se puede cambiar en Ajustes para adaptarse a la biblioteca de SongBook sin
  * reorganizar nada. Si `voces` está vacío, la carpeta raíz entera es «Voces» y
- * sus subcarpetas son categorías (como las organiza SongBook).
+ * sus subcarpetas son categorías (como las organiza SongBook). En `metales`
+ * cada instrumento tiene su subcarpeta (Saxofon, Trompeta); lo que esté fuera
+ * de ellas se muestra a los dos.
  */
 export const DEFAULT_LAYOUT = {
   root: 'Cancionero',
   voces: 'Voces',
   bateria: 'Bateria',
+  metales: 'Metales', // dentro: una carpeta por instrumento (Saxofon, Trompeta)
   enlaces: 'Enlaces',
 };

@@ -1,0 +1,26 @@
+{title: Castillo fuerte es nuestro Dios}
+{subtitle: Trompeta en Si♭ · tono escrito}
+{key: D}
+{tempo: 76}
+{time: 4/4}
+# Demostración: arreglo propio. Escrito para trompeta en Si♭ (suena una 2.ª mayor más grave).
+# La app lo transporta si la lista pide otro tono.
+
+{c: Intro · 4 compases}
+{ci: Fanfarria: negras en la nota del acorde, forte. Platillo de la batería en el compás 4.}
+[D] [A] [D] [A]
+
+{c: Estrofa 1 · tacet}
+{ci: Solo voces y piano. Entrar en la estrofa 2.}
+
+{c: Estrofa 2 · contracanto suave (con sordina si la hay)}
+[D]Nuestro va[A]lor es [Bm]nada a[G]quí,
+con [G]él todo es [D]per[A]di[D]do;
+{ci: En «¿Sabéis quién es? Jesús» subir a la melodía.}
+¿Sa[Bm]béis quién [F#]es? Je[Bm]sús,
+el [G]que ven[D]ció en la [A]cruz,
+
+{c: Estrofa 4 · melodía, tutti}
+[D]Esa pa[A]labra [Bm]del Se[G]ñor,
+que el [G]mundo no a[D]pe[A]te[D]ce.
+{ci: Final: ritardando con la batería y nota larga en el último acorde.}
