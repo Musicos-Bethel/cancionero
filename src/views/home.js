@@ -1,7 +1,7 @@
 import { h } from '../ui/dom.js';
 import { icon } from '../ui/icons.js';
 import { state } from '../state.js';
-import { nextEvent, upcomingLists, resolveItem, SECTION_LABEL } from '../library/library.js';
+import { nextEvent, upcomingLists, resolveItem, SECTION_LABEL, SECTIONS, missingPartLabel } from '../library/library.js';
 import { link, listCard, songRow, emptyState, pageHeader, sectionSwitch } from '../ui/components.js';
 import { displayKey } from '../ui/components.js';
 import { longDate, relativeDay, plural } from '../ui/format.js';
@@ -31,7 +31,7 @@ export function HomeView() {
     ),
   );
 
-  const total = lib.songs.voces.length + lib.songs.bateria.length;
+  const total = SECTIONS.reduce((n, sec) => n + lib.songs[sec].length, 0);
   if (!total && !lib.lists.length) {
     el.append(
       state.sync.running
@@ -70,7 +70,7 @@ export function HomeView() {
                 song ? { href: songHref(next, i, song) } : {},
                 h('span.num', String(i + 1)),
                 h('span.t', song ? song.title : it.name),
-                !song || fallback ? h('span.warn-dot', { title: !song ? 'No está en el cancionero' : 'Sin versión de batería' }) : null,
+                !song || fallback ? h('span.warn-dot', { title: !song ? 'No está en el cancionero' : missingPartLabel(section) }) : null,
                 it.key ? h('span.key-text', displayKey(it.key)) : null,
               ),
             ),

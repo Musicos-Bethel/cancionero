@@ -1,12 +1,12 @@
 import { h, clear } from '../ui/dom.js';
 import { icon } from '../ui/icons.js';
 import { state } from '../state.js';
-import { searchSongs, categoriesOf, SECTION_LABEL, ALL } from '../library/library.js';
+import { searchSongs, categoriesOf, SECTION_LABEL, SECTIONS, ALL } from '../library/library.js';
 import { link, songRow, emptyState, pageHeader, displayKey, sectionSwitch } from '../ui/components.js';
 import { plural } from '../ui/format.js';
 
 // Última categoría elegida en cada sección (mientras la app está abierta).
-const lastCategory = { voces: ALL, bateria: ALL };
+const lastCategory = Object.fromEntries(SECTIONS.map((s) => [s, ALL]));
 
 export function SongsView({ query }) {
   const section = state.settings.section;

@@ -9,9 +9,38 @@ import { buildLinkMap, cleanLink } from '../links/links.js';
  * Registro de archivo: { path, origin, section, ext, kind, etag, size, meta?, text? }
  */
 
-export const SECTIONS = ['voces', 'bateria'];
-export const SECTION_LABEL = { voces: 'Voces e instrumentos', bateria: 'Batería' };
-export const SECTION_SHORT = { voces: 'Voces', bateria: 'Batería' };
+/**
+ * Secciones de canciones. «Metales» es un grupo con una partitura por
+ * instrumento (saxofón y trompeta); las partituras que están en la carpeta
+ * Metales pero fuera de la de un instrumento son «generales» y se ven en los dos.
+ */
+export const SECTIONS = ['voces', 'bateria', 'saxofon', 'trompeta'];
+export const METALES = ['saxofon', 'trompeta'];
+export const isMetal = (section) => METALES.includes(section);
+export const SECTION_LABEL = { voces: 'Voces e instrumentos', bateria: 'Batería', saxofon: 'Metales · saxofón', trompeta: 'Metales · trompeta' };
+export const SECTION_SHORT = { voces: 'Voces', bateria: 'Batería', saxofon: 'Saxofón', trompeta: 'Trompeta' };
+/**
+ * Instrumentos transpositores: semitonos que hay que subir el tono de concierto
+ * (el de la lista y el de voces) para obtener el que lee cada instrumento.
+ * Saxofón alto/barítono en Mi♭ (+9), tenor/soprano en Si♭ (+2); trompeta en Si♭ (+2).
+ */
+export const TUNING_PC = { Eb: 3, Bb: 10 };
+export function instrumentTuning(section, settings = {}) {
+  if (section === 'saxofon') return settings.saxTuning === 'Bb' ? 'Bb' : 'Eb';
+  if (section === 'trompeta') return 'Bb';
+  return null;
+}
+export function writtenOffset(section, settings = {}) {
+  const t = instrumentTuning(section, settings);
+  return t ? (12 - TUNING_PC[t]) % 12 : 0;
+}
+
+/** «Sin versión de batería», «Sin partitura de saxofón»… */
+export const missingPartLabel = (section) =>
+  section === 'bateria' ? 'Sin versión de batería' : `Sin partitura de ${SECTION_SHORT[section]?.toLowerCase() ?? section}`;
+/** Partes de una canción además de la de voces (la de voces es la «principal»). */
+export const PARTS = ['bateria', 'saxofon', 'trompeta'];
+const perSection = (fn) => Object.fromEntries(SECTIONS.map((s) => [s, fn(s)]));
 
 const TEXT_EXT = new Set(['pro', 'chordpro', 'cho', 'chopro', 'crd', 'txt']);
 const IMAGE_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
@@ -22,8 +51,17 @@ export function sectionOfFolder(name) {
   const n = normalize(name);
   if (/^(voces|voz|vocal|voces e instrumentos|instrumentos)/.test(n)) return 'voces';
   if (/^(bateria|drums?|percusion)/.test(n)) return 'bateria';
+  if (/^(metales|vientos?|brass|horns?)/.test(n)) return 'metales';
   if (/^(listas?|setlists?|eventos?)/.test(n)) return 'listas';
   if (/^(enlaces?|links?|youtube|videos?|audios?|escuchar)/.test(n)) return 'enlaces';
+  return null;
+}
+
+/** Instrumento de una subcarpeta de Metales («Saxofón», «Sax alto», «Trompetas»…). */
+export function metalOfFolder(name) {
+  const n = normalize(name);
+  if (/^(sax|saxo|saxofon|saxophone)/.test(n)) return 'saxofon';
+  if (/^(trompetas?|trumpets?|tpt)\b/.test(n)) return 'trompeta';
   return null;
 }
 
@@ -51,7 +89,7 @@ export function classifyPath(path, layout = null) {
   let depth = 1;
   if (layout) {
     // La carpeta configurada más larga que coincida gana (p. ej. «Himnos/Batería»).
-    const candidates = ['bateria', 'listas', 'enlaces', 'voces']
+    const candidates = ['bateria', 'metales', 'listas', 'enlaces', 'voces']
       .map((sec) => ({ sec, folder: segs(layout[sec] ?? '').map(normalize) }))
       .filter((c) => c.folder.length)
       .sort((a, b) => b.folder.length - a.folder.length);
@@ -68,6 +106,15 @@ export function classifyPath(path, layout = null) {
     section = sectionOfFolder(parts[0]);
   }
   if (!section) return null;
+
+  // Metales/<instrumento>/…: la subcarpeta del instrumento forma parte de la sección.
+  if (section === 'metales') {
+    const sub = parts.length - 1 > depth ? metalOfFolder(parts[depth]) : null;
+    if (sub) {
+      section = sub;
+      depth += 1;
+    }
+  }
 
   let kind = null;
   if (section === 'listas') kind = ext === 'txt' ? 'list' : null;
@@ -120,9 +167,9 @@ function makeSong(section, id, name, kind, paths, record, { imageset = false } =
 
 export function buildLibrary(files, { today = todayISO() } = {}) {
   const lib = {
-    songs: { voces: [], bateria: [] },
-    byId: { voces: new Map(), bateria: new Map() },
-    byTitle: { voces: new Map(), bateria: new Map() },
+    songs: perSection(() => []),
+    byId: perSection(() => new Map()),
+    byTitle: perSection(() => new Map()),
     lists: [],
     duplicates: [],
     linkMap: new Map(),
@@ -131,13 +178,18 @@ export function buildLibrary(files, { today = todayISO() } = {}) {
   // Agrupa por carpeta para detectar canciones hechas de varias imágenes.
   const folders = new Map();
   for (const f of files) {
-    if (!SECTIONS.includes(f.section)) continue;
+    if (!SECTIONS.includes(f.section) && f.section !== 'metales') continue;
     const dir = splitPath(f.path).dir;
     if (!folders.has(dir)) folders.set(dir, []);
     folders.get(dir).push(f);
   }
 
-  const candidates = { voces: [], bateria: [] };
+  const candidates = perSection(() => []);
+  // Las partituras generales de metales van a los dos instrumentos.
+  const push = (section, song) => {
+    if (section !== 'metales') return candidates[section].push(song);
+    for (const m of METALES) candidates[m].push({ ...song, key: `${m}:${song.id}`, section: m, general: true });
+  };
   for (const [dir, group] of folders) {
     const level = dir ? dir.split('/').length : 0;
     const onlyImages = group.every((f) => f.kind === 'image');
@@ -146,27 +198,29 @@ export function buildLibrary(files, { today = todayISO() } = {}) {
     if (level > sectionDepth && onlyImages) {
       const name = dir.split('/').pop();
       const paths = group.map((f) => f.path).sort(naturalPage);
-      candidates[group[0].section].push(makeSong(group[0].section, normalize(name), name, 'imageset', paths, group[0], { imageset: true }));
+      push(group[0].section, makeSong(group[0].section, normalize(name), name, 'imageset', paths, group[0], { imageset: true }));
       continue;
     }
     for (const f of group) {
       const name = splitPath(f.path).base;
       const kind = f.kind === 'text' ? 'chordpro' : f.kind;
-      candidates[f.section].push(makeSong(f.section, normalize(name), name, kind, [f.path], f));
+      push(f.section, makeSong(f.section, normalize(name), name, kind, [f.path], f));
     }
   }
 
   for (const section of SECTIONS) {
-    // Preferencias ante nombres repetidos: local > remoto, texto > PDF > imagen.
+    // Preferencias ante nombres repetidos: local > remoto, la del instrumento >
+    // la general de metales, texto > PDF > imagen.
     candidates[section].sort(
       (a, b) =>
         (a.origin === 'local' ? 0 : 1) - (b.origin === 'local' ? 0 : 1) ||
+        (a.general ? 1 : 0) - (b.general ? 1 : 0) ||
         KIND_RANK[a.kind] - KIND_RANK[b.kind] ||
         compareEs(a.path, b.path),
     );
     for (const s of candidates[section]) {
       if (lib.byId[section].has(s.id)) {
-        lib.duplicates.push(s);
+        if (!s.general) lib.duplicates.push(s);
         continue;
       }
       lib.byId[section].set(s.id, s);
@@ -184,10 +238,12 @@ export function buildLibrary(files, { today = todayISO() } = {}) {
   for (const s of lib.songs.voces) {
     s.link ||= lib.linkMap.get(s.id) || lib.linkMap.get(normalize(s.title)) || '';
   }
-  for (const s of lib.songs.bateria) {
-    const v = vocesVersion(lib, s);
-    if (v) s.categories = [...new Set([...s.categories, ...v.categories])];
-    s.link ||= v?.link || lib.linkMap.get(s.id) || lib.linkMap.get(normalize(s.title)) || '';
+  for (const part of PARTS) {
+    for (const s of lib.songs[part]) {
+      const v = vocesVersion(lib, s);
+      if (v) s.categories = [...new Set([...s.categories, ...v.categories])];
+      s.link ||= v?.link || lib.linkMap.get(s.id) || lib.linkMap.get(normalize(s.title)) || '';
+    }
   }
 
   for (const f of files) {
@@ -226,34 +282,40 @@ export function findSong(lib, section, nameOrId) {
   return lib.byId[section].get(n) ?? lib.byTitle[section].get(n) ?? null;
 }
 
-/** Versión de batería de una canción de voces. */
-export function drumVersion(lib, vocesSong) {
-  if (!vocesSong) return null;
-  if (vocesSong.bateria) {
+/** Partitura de otra sección (batería, saxofón, trompeta) de una canción de voces. */
+export function partVersion(lib, vocesSong, part) {
+  if (!vocesSong || !lib.byId[part]) return null;
+  if (part === 'bateria' && vocesSong.bateria) {
     const s = findSong(lib, 'bateria', vocesSong.bateria);
     if (s) return s;
   }
-  return lib.byId.bateria.get(vocesSong.id) ?? lib.byTitle.bateria.get(normalize(vocesSong.title)) ?? null;
+  return lib.byId[part].get(vocesSong.id) ?? lib.byTitle[part].get(normalize(vocesSong.title)) ?? null;
 }
 
-/** Canción de voces correspondiente a una partitura de batería. */
-export function vocesVersion(lib, drumSong) {
-  if (!drumSong) return null;
-  for (const s of lib.songs.voces) {
-    if (s.bateria && normalize(s.bateria) === drumSong.id) return s;
+/** Versión de batería de una canción de voces. */
+export const drumVersion = (lib, vocesSong) => partVersion(lib, vocesSong, 'bateria');
+
+/** Canción de voces correspondiente a una partitura de batería o de metales. */
+export function vocesVersion(lib, partSong) {
+  if (!partSong) return null;
+  if (partSong.section === 'bateria' || !partSong.section) {
+    for (const s of lib.songs.voces) {
+      if (s.bateria && normalize(s.bateria) === partSong.id) return s;
+    }
   }
-  return lib.byId.voces.get(drumSong.id) ?? lib.byTitle.voces.get(normalize(drumSong.title)) ?? null;
+  return lib.byId.voces.get(partSong.id) ?? lib.byTitle.voces.get(normalize(partSong.title)) ?? null;
 }
 
 /**
  * Resuelve un elemento de lista para una sección.
- * Devuelve { song, fallback } — fallback=true si en Batería se muestra la versión de voces.
+ * Devuelve { song, fallback } — fallback=true si en Batería o Metales se
+ * muestra la versión de voces porque no hay partitura propia.
  */
 export function resolveItem(lib, item, section) {
   const voces = findSong(lib, 'voces', item.name);
-  if (section === 'voces') return { song: voces, fallback: false };
-  const drums = (voces && drumVersion(lib, voces)) || findSong(lib, 'bateria', item.name);
-  if (drums) return { song: drums, fallback: false };
+  if (section === 'voces' || !lib.byId[section]) return { song: voces, fallback: false };
+  const part = (voces && partVersion(lib, voces, section)) || findSong(lib, section, item.name);
+  if (part) return { song: part, fallback: false };
   return { song: voces, fallback: !!voces };
 }
 
@@ -305,13 +367,14 @@ export function linkReport(lib) {
     else vocesSinBateria.push(s);
   }
   const bateriaSinVoces = lib.songs.bateria.filter((s) => !drumsLinked.has(s.key));
+  const metalesSinVoces = METALES.flatMap((m) => lib.songs[m].filter((s) => !s.general && !vocesVersion(lib, s)));
   const noEncontradas = [];
   for (const l of lib.lists) {
     for (const it of l.items) {
-      if (!resolveItem(lib, it, 'voces').song && !findSong(lib, 'bateria', it.name)) {
+      if (!resolveItem(lib, it, 'voces').song && !PARTS.some((p) => findSong(lib, p, it.name))) {
         noEncontradas.push({ list: l, item: it });
       }
     }
   }
-  return { vocesSinBateria, bateriaSinVoces, noEncontradas, duplicados: lib.duplicates };
+  return { vocesSinBateria, bateriaSinVoces, metalesSinVoces, noEncontradas, duplicados: lib.duplicates };
 }

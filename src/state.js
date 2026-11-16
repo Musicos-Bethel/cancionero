@@ -2,7 +2,7 @@ import * as db from './db.js';
 import { buildLibrary } from './library/library.js';
 import { syncFrom, prefetch } from './sync/sync.js';
 import { demoSource } from './sources/demo.js';
-import { upcomingLists, resolveItem } from './library/library.js';
+import { upcomingLists, resolveItem, SECTIONS } from './library/library.js';
 import { songMeta } from './chordpro/song-doc.js';
 import { applyOutbox } from './lists/outbox.js';
 import { DEFAULT_LAYOUT } from './config.js';
@@ -16,7 +16,9 @@ export const DEFAULT_PEDAL = {
 };
 
 export const DEFAULT_SETTINGS = {
-  section: 'voces',
+  section: 'voces', // 'voces' | 'bateria' | 'saxofon' | 'trompeta'
+  metal: 'saxofon', // último instrumento de metales elegido
+  saxTuning: 'Eb', // saxofón en Mi♭ (alto/barítono) o Si♭ (tenor/soprano)
   notation: 'american',
   theme: 'auto',
   fontScale: 1,
@@ -133,18 +135,18 @@ export async function runSync({ quiet = false } = {}) {
 }
 
 /**
- * PDF e imágenes: se descargan los de las listas próximas (ambas secciones,
+ * PDF e imágenes: se descargan los de las listas próximas (todas las secciones,
  * para poder cambiar de sección sin conexión) o todo si el ajuste lo pide.
  */
 export async function prefetchNeeded() {
   const lib = state.library;
   let songs;
   if (state.settings.downloadAll) {
-    songs = [...lib.songs.voces, ...lib.songs.bateria];
+    songs = SECTIONS.flatMap((sec) => lib.songs[sec]);
   } else {
     songs = upcomingLists(lib)
       .slice(0, 3)
-      .flatMap((l) => l.items.flatMap((it) => [resolveItem(lib, it, 'voces').song, resolveItem(lib, it, 'bateria').song]));
+      .flatMap((l) => l.items.flatMap((it) => SECTIONS.map((sec) => resolveItem(lib, it, sec).song)));
   }
   return prefetch(currentSource(), songs, {
     onProgress: (done, total) => {

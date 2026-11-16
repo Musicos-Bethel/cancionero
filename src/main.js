@@ -56,6 +56,48 @@ const tabbar = h(
 );
 app.append(appbar, progress, main, tabbar);
 
+/**
+ * Pestañas fáciles de pulsar. Con un enlace normal el móvil descarta el toque
+ * si el dedo se mueve un poco o si cae en el borde de la cápsula, y había que
+ * acertar en el centro. Aquí cuenta toda la barra (y un margen alrededor): la
+ * pestaña se elige por la posición horizontal del dedo y se cambia al levantarlo,
+ * aunque se haya movido algo. El clic normal sigue valiendo para el teclado.
+ */
+const TAP_SLOP = 30; // px que se puede mover el dedo sin que deje de ser un toque
+let tabTap = null;
+let tabHandledAt = 0;
+function tabAt(x) {
+  const tabs = [...tabbar.children];
+  const r = tabbar.getBoundingClientRect();
+  const i = Math.floor(((x - r.left) / r.width) * tabs.length);
+  return tabs[Math.max(0, Math.min(tabs.length - 1, i))];
+}
+tabbar.addEventListener('pointerdown', (e) => {
+  if (e.button > 0) return;
+  tabTap = { id: e.pointerId, x: e.clientX, y: e.clientY };
+});
+tabbar.addEventListener('pointerup', (e) => {
+  const t = tabTap;
+  tabTap = null;
+  if (!t || t.id !== e.pointerId || Math.hypot(e.clientX - t.x, e.clientY - t.y) > TAP_SLOP) return;
+  const tab = tabAt(t.x);
+  tabHandledAt = performance.now();
+  e.preventDefault();
+  const href = tab.getAttribute('href');
+  if (location.hash === href || (href === '#/' && !location.hash)) window.scrollTo({ top: 0, behavior: 'smooth' });
+  else location.hash = href;
+});
+tabbar.addEventListener('pointercancel', () => (tabTap = null));
+// El clic que sigue al toque ya está atendido; si no hubo toque (teclado), se deja.
+tabbar.addEventListener('click', (e) => {
+  if (performance.now() - tabHandledAt < 800) e.preventDefault();
+});
+
+// Al volver del zoom con los dedos, la página debe quedar en su sitio.
+window.visualViewport?.addEventListener('resize', () => {
+  if (window.visualViewport.scale <= 1.01 && window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+});
+
 // ---------- Títulos grandes que se encogen al desplazar
 let titleObserver = null;
 function watchLargeTitle(view) {

@@ -1,7 +1,7 @@
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import { state, setSettings } from '../state.js';
-import { SECTION_SHORT } from '../library/library.js';
+import { SECTION_SHORT, METALES, isMetal } from '../library/library.js';
 import { longDate, relativeDay, plural, shortDate } from './format.js';
 import { BRAND } from '../config.js';
 import { parseKey } from '../music/chords.js';
@@ -20,24 +20,48 @@ export function displayKey(k) {
 
 export const link = (path) => '#' + path;
 
-/** Selector Voces | Batería (control segmentado de cristal). */
+/**
+ * Selector Voces | Batería | Metales (control segmentado de cristal). Con
+ * Metales aparece debajo la elección del instrumento (Saxofón | Trompeta); se
+ * recuerda el último instrumento elegido.
+ */
 export function sectionSwitch() {
-  const el = h('div.segmented.glass-seg', { role: 'tablist', 'aria-label': 'Sección' });
-  for (const [id, label] of Object.entries(SECTION_SHORT)) {
-    el.append(
-      h(
-        'button',
-        {
-          role: 'tab',
-          'aria-selected': String(state.settings.section === id),
-          class: state.settings.section === id ? 'on' : '',
-          onclick: () => state.settings.section !== id && setSettings({ section: id }),
-        },
-        h('span', label),
-      ),
-    );
-  }
-  return el;
+  const current = state.settings.section;
+  const metal = isMetal(current) ? current : state.settings.metal || METALES[0];
+  const tabs = [
+    ['voces', 'Voces'],
+    ['bateria', 'Batería'],
+    [metal, 'Metales'],
+  ];
+  const seg = (items, label, isOn) => {
+    const el = h('div.segmented.glass-seg', { role: 'tablist', 'aria-label': label });
+    for (const [id, text] of items) {
+      const on = isOn(id);
+      el.append(
+        h(
+          'button',
+          {
+            type: 'button',
+            role: 'tab',
+            'aria-selected': String(on),
+            class: on ? 'on' : '',
+            onclick: () => current !== id && setSettings(isMetal(id) ? { section: id, metal: id } : { section: id }),
+          },
+          h('span', text),
+        ),
+      );
+    }
+    return el;
+  };
+  const main = seg(tabs, 'Sección', (id) => (isMetal(id) ? isMetal(current) : current === id));
+  if (!isMetal(current)) return main;
+  const sub = seg(
+    METALES.map((m) => [m, SECTION_SHORT[m]]),
+    'Instrumento de metal',
+    (id) => current === id,
+  );
+  sub.classList.add('small', 'sub-seg');
+  return h('div.section-switch', main, sub);
 }
 
 export function brandMark() {
