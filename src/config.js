@@ -1,12 +1,13 @@
 /**
- * Identidad visual. Para usar el logo de la iglesia:
- *  1. Copia el archivo a public/brand/ (por ejemplo public/brand/logo.svg)
- *  2. Pon aquí su ruta: logo: import.meta.env.BASE_URL + 'brand/logo.svg'
- * Mientras `logo` sea null se muestra el nombre en texto.
+ * Identidad visual. El logo de la iglesia está en public/brand/logo.svg (de una
+ * sola tinta: se pinta con el color del texto, negro en modo claro y blanco en
+ * modo oscuro). `logoRatio` = ancho / alto de su viewBox.
+ * Con `logo: null` se muestra el nombre en texto.
  */
 export const BRAND = {
   name: 'Bethel',
-  logo: null,
+  logo: import.meta.env.BASE_URL + 'brand/logo.svg',
+  logoRatio: 338 / 243,
 };
 
 /**
