@@ -68,7 +68,9 @@ export function brandMark() {
   return h(
     'a.brand',
     { href: link('/'), 'aria-label': `${BRAND.name} · Inicio` },
-    BRAND.logo ? h('img.brand-logo', { src: BRAND.logo, alt: BRAND.name }) : h('span.brand-name', BRAND.name),
+    BRAND.logo
+      ? h('span.brand-logo', { role: 'img', 'aria-label': BRAND.name, style: `--logo: url("${BRAND.logo}"); --logo-ratio: ${BRAND.logoRatio ?? 1}` })
+      : h('span.brand-name', BRAND.name),
   );
 }
 
