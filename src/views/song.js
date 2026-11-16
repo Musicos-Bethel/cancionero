@@ -20,6 +20,7 @@ import { attachSongSwipe } from '../features/swipe.js';
 import { enterImmersive, exitImmersive, isImmersive, onImmersiveChange } from '../features/immersive.js';
 import { ensureBlob } from '../sync/sync.js';
 import { link, emptyState, prettyKey } from '../ui/components.js';
+import { isLeader } from '../leader/leader.js';
 
 const FONT_MIN = 0.7;
 const FONT_MAX = 2.4;
@@ -309,6 +310,15 @@ export function SongView({ section, id, query, backHref }) {
         icon(isImmersive() ? 'shrink' : 'expand', { size: 20 }),
         h('span.sheet-row-label', isImmersive() ? 'Salir de pantalla completa' : 'Pantalla completa'),
       ),
+      isLeader() && song.section === 'voces' && song.kind === 'chordpro'
+        ? h(
+            'a.sheet-row.action',
+            { href: link(`/editor/voces/${encodeURIComponent(song.id)}`), onclick: () => s.close() },
+            icon('edit', { size: 20 }),
+            h('span.sheet-row-label', 'Editar canción'),
+            icon('next', { size: 16, cls: 'icon chev' }),
+          )
+        : null,
       ...others.map((o) =>
         h(
           'a.sheet-row.action',

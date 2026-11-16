@@ -126,11 +126,14 @@ export async function importFiles(fileList, section, { duplicates = 'replace', o
   return res;
 }
 
-export const localSongCount = () => state.files.filter((f) => f.origin === 'local').length;
+export const localSongCount = () => state.files.filter((f) => f.origin === 'local' && f.source !== 'editor').length;
 
 /** Borra todas las canciones importadas en este dispositivo. */
+/** Las canciones creadas con el editor no son «importadas»: no se borran aquí. */
+const imported = (f) => f.origin === 'local' && f.source !== 'editor';
+
 export async function removeAllLocal() {
-  const paths = state.files.filter((f) => f.origin === 'local').map((f) => f.path);
+  const paths = state.files.filter(imported).map((f) => f.path);
   if (paths.length) await db.deleteFiles(paths);
   await reloadLibrary();
   return paths.length;
