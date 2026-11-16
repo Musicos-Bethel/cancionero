@@ -5,7 +5,7 @@ import { parseChord } from '../music/chords.js';
  * Si el texto ya parece ChordPro, se devuelve tal cual.
  */
 
-const SECTION_HEADER =
+export const SECTION_HEADER =
   /^\s*\[?\s*((?:pre-?)?coro|estribillo|estrofa|verso|puente|intro|introducci[oó]n|final|outro|interludio|instrumental|chorus|verse|bridge|tag)\b[^\]]*\]?\s*:?\s*$/i;
 
 const NON_CHORD_TOKEN = /^(\||\|\||-+|\/|%|x\d+|\(x\d+\)|\d+x|\.+|:\|\|?|\|\|?:)$/i;
@@ -54,17 +54,32 @@ function chordsOnly(chordLine) {
 
 export function txtToChordPro(text) {
   if (looksLikeChordPro(text)) return text;
+  return plainToChordPro(text);
+}
+
+const DIRECTIVE_LINE = /^\s*\{.*\}\s*$/;
+
+/**
+ * Como txtToChordPro, pero siempre convierte: las líneas que ya son directivas
+ * ({c: …}, {soc}…) y la letra con [acordes] se dejan como están. Lo usa el
+ * editor, donde se mezclan ambas cosas.
+ */
+export function plainToChordPro(text) {
   const lines = String(text).replace(/\r\n?/g, '\n').replace(/\t/g, '        ').split('\n');
   const out = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].replace(/\s+$/, '');
+    if (DIRECTIVE_LINE.test(line)) {
+      out.push(line.trim());
+      continue;
+    }
     if (SECTION_HEADER.test(line)) {
       out.push(`{c: ${line.trim().replace(/^\[|\]$/g, '').replace(/:$/, '')}}`);
       continue;
     }
     if (isChordLine(line)) {
       const next = lines[i + 1]?.replace(/\s+$/, '');
-      if (next && next.trim() && !isChordLine(next) && !SECTION_HEADER.test(next)) {
+      if (next && next.trim() && !isChordLine(next) && !SECTION_HEADER.test(next) && !DIRECTIVE_LINE.test(next)) {
         out.push(mergeChordLine(line, next));
         i++;
       } else {

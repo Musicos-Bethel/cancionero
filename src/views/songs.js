@@ -4,6 +4,7 @@ import { state } from '../state.js';
 import { searchSongs, categoriesOf, SECTION_LABEL, SECTIONS, ALL } from '../library/library.js';
 import { link, songRow, emptyState, pageHeader, displayKey, sectionSwitch } from '../ui/components.js';
 import { plural } from '../ui/format.js';
+import { isLeader } from '../leader/leader.js';
 
 // Última categoría elegida en cada sección (mientras la app está abierta).
 const lastCategory = Object.fromEntries(SECTIONS.map((s) => [s, ALL]));
@@ -102,6 +103,13 @@ export function SongsView({ query }) {
 
   el.append(
     pageHeader('Canciones', null, sectionSwitch()),
+    isLeader() && section === 'voces'
+      ? h(
+          'div.leader-tools',
+          h('span.leader-tag', icon('unlock', { size: 16 }), 'Modo líder'),
+          h('a.btn.small.primary', { href: link('/editor/nueva') }, icon('plus', { size: 16 }), 'Nueva canción'),
+        )
+      : null,
     h('label.search', icon('search', { size: 18 }), input),
     chips,
     count,

@@ -17,6 +17,7 @@ import { ListsView, ListDetailView } from './views/lists.js';
 import { SongView } from './views/song.js';
 import { SettingsView } from './views/settings.js';
 import { ListEditorView } from './views/list-editor.js';
+import { SongEditorView } from './views/song-editor.js';
 import { flushOutbox } from './lists/outbox-runner.js';
 import { plural } from './ui/format.js';
 
@@ -127,6 +128,8 @@ function parseHash() {
   return { path, query: new URLSearchParams(qs), raw };
 }
 
+const isEditor = (view) => view?.el.classList.contains('list-editor') || view?.el.classList.contains('song-editor');
+
 function route() {
   const { path, query, raw } = parseHash();
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
@@ -146,6 +149,8 @@ function route() {
   else if (parts[0] === 'listas' && parts[1] === 'editar') view = ListEditorView({ mode: 'edit', id: parts.slice(2).join('/'), query });
   else if (parts[0] === 'listas' && parts[1] === 'duplicar') view = ListEditorView({ mode: 'duplicate', id: parts.slice(2).join('/'), query });
   else if (parts[0] === 'listas') view = ListsView();
+  else if (parts[0] === 'editor' && parts[1] === 'nueva') view = SongEditorView({ id: null });
+  else if (parts[0] === 'editor' && parts[1] === 'voces') view = SongEditorView({ id: parts.slice(2).join('/') });
   else if (parts[0] === 'lista') view = ListDetailView({ id: parts.slice(1).join('/') });
   else if (songMode) view = SongView({ section: parts[1], id: parts[2] ?? '', query, backHref: lastListHref });
   else if (parts[0] === 'ajustes') view = SettingsView();
@@ -158,11 +163,11 @@ function route() {
   current = view;
   currentKey = path;
   document.body.classList.toggle('song-mode', !!view.fullscreen);
-  document.body.classList.toggle('editor-mode', view.el.classList.contains('list-editor'));
+  document.body.classList.toggle('editor-mode', isEditor(view));
   clear(main).append(view.el);
   watchLargeTitle(view);
 
-  const tabPath = '/' + (parts[0] === 'lista' ? 'listas' : parts[0] === 'cancion' ? '' : parts[0] ?? '');
+  const tabPath = '/' + (parts[0] === 'lista' ? 'listas' : parts[0] === 'editor' ? 'canciones' : parts[0] === 'cancion' ? '' : parts[0] ?? '');
   for (const t of tabbar.children) {
     const on = t.dataset.path === (tabPath === '/' ? '/' : tabPath);
     t.classList.toggle('on', on);
@@ -180,7 +185,7 @@ function route() {
  * editor de listas (que no debe perder lo que se está escribiendo).
  */
 function refresh() {
-  if (current?.fullscreen || current?.el.classList.contains('list-editor')) return;
+  if (current?.fullscreen || isEditor(current)) return;
   const y = window.scrollY;
   scrollMemory.set(currentKey, y);
   route();

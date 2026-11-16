@@ -229,3 +229,38 @@ body.sheet-open { overflow: hidden; }
 .help-list li { margin: 4px 0; }
 .help-list strong { color: var(--text); font-weight: 600; }
 .inline-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ===== Editor de canciones ===== */
+.field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.key-msg { color: var(--danger); font-weight: 400; }
+.tag-suggest { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 12px; }
+.tag-suggest:empty { display: none; }
+.tag-suggest .cat-chip { min-height: 32px; padding: 0 12px; font-size: 14px; background: var(--fill); }
+.song-editor .items-head { flex-wrap: wrap; }
+.editor-modes { display: flex; }
+.editor-help { margin: 0 4px 8px; }
+.song-text {
+  display: block;
+  width: 100%;
+  min-height: 46vh;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 14px 16px;
+  color: var(--text);
+  /* Monoespaciada: los acordes quedan alineados con la letra como en papel. */
+  font: 16px/1.45 var(--font-mono);
+  resize: vertical;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 8;
+}
+.song-text:focus { outline: none; box-shadow: 0 0 0 2px var(--gold); }
+.song-preview {
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 16px 18px 22px;
+  --song-size: 18px;
+}
+.song-preview .song-title { font-size: 26px; margin: 0 0 2px; }
+.song-preview .song-artist { margin: 0 0 8px; color: var(--text-2); }
