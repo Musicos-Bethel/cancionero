@@ -21,7 +21,7 @@ export async function pool(items, n, fn) {
  */
 export async function syncFrom(source, { onProgress } = {}) {
   const remote = (await source.list())
-    .map((r) => ({ ...r, info: classifyPath(r.path) }))
+    .map((r) => ({ ...r, info: classifyPath(r.path, source.layout?.() ?? null) }))
     .filter((r) => r.info);
   const local = (await db.getAllFiles()).filter((f) => f.origin === 'remote');
   const localByPath = new Map(local.map((f) => [f.path, f]));

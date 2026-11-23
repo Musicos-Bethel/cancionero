@@ -188,7 +188,36 @@ que cambiar de destino no afecta al editor.
 En *Ajustes → Carpetas en OneDrive* se indica la carpeta del cancionero y dónde están las canciones de
 voces, las partituras de batería y los enlaces. Si las canciones de voces se dejan vacías, toda la
 carpeta cuenta como voces y sus subcarpetas son categorías, como las organiza SongBook. Así no hace falta
-reorganizar la biblioteca. Se aplicará al conectar OneDrive.
+reorganizar la biblioteca. «Ver carpetas de OneDrive» enseña las carpetas de la raíz para elegir la del
+cancionero con un toque; si la carpeta no existe, la app lo dice y propone las que hay.
+
+## Conexión con OneDrive
+
+*Ajustes → Biblioteca → Origen → OneDrive*. La app pide iniciar sesión con la cuenta de Microsoft
+compartida del equipo (en la página de Microsoft: la contraseña nunca pasa por la app) y descarga la
+biblioteca. Después funciona sin conexión con lo descargado, como con la demostración.
+
+- **Registro en Microsoft Entra** (hecho por el líder de banda el 23/11/2026): solo cuentas personales de
+  Microsoft, plataforma SPA, URI de redirección `https://musicos-bethel.github.io/cancionero/`, permisos
+  delegados `Files.Read`, `Files.ReadWrite.AppFolder`, `offline_access` y `User.Read` (este lo añade
+  Microsoft solo; sirve para iniciar sesión y mostrar la cuenta). El Id. de aplicación está en
+  `src/config.js` (`ONEDRIVE.clientId`); no es secreto.
+- **Inicio de sesión:** OAuth 2.0 con PKCE y redirección a Microsoft (sin bibliotecas externas:
+  `src/sources/onedrive-auth.js`). Al volver, la app termina el proceso y limpia la dirección.
+- **La sesión dura 24 horas.** Es un límite de Microsoft para las apps web y no se puede alargar. Pasado
+  ese tiempo la app sigue funcionando con todo lo descargado; al actualizar avisa («La sesión de OneDrive
+  ha caducado») con un botón para volver a entrar. Si Microsoft recuerda la cuenta en el navegador, es un
+  toque. Nunca se pide en mitad de una canción: solo al pulsar «Iniciar sesión».
+- **Lectura** (`src/sources/onedrive.js`, Microsoft Graph): recorre la carpeta del cancionero y sus
+  subcarpetas, descarga los textos que cambian (por eTag) y los PDF e imágenes de las próximas listas. Los
+  archivos se descargan de la dirección temporal que da OneDrive, sin enviar el token.
+- **Listas y PIN del modo líder:** en `Aplicaciones/Cancionero Bethel/` (la carpeta que OneDrive crea para
+  la app), con control de versiones y conflictos como en la demostración. La app no puede escribir ni
+  borrar en la carpeta de canciones. Una carpeta `Listas` dentro de la carpeta del cancionero no se usa.
+- **Canciones y hojas creadas con los editores:** siguen guardándose en el dispositivo (fase 2c).
+- **Cambiar de origen** borra del dispositivo la biblioteca del origen anterior, los cambios pendientes y
+  la sesión de modo líder (lo importado y lo creado con los editores se queda).
+- **Cerrar sesión:** *Ajustes → OneDrive → Cerrar sesión*. Lo descargado se queda.
 
 ## Importar canciones reales a un dispositivo
 
@@ -206,7 +235,7 @@ llegan al repositorio, y se pueden borrar desde ahí mismo.
 
 ## Demostración
 
-Mientras no haya conexión con OneDrive (fase 2), la app usa una biblioteca de demostración
+Si en *Ajustes → Origen* está elegida «Demostración» (la opción por defecto), la app usa una biblioteca de demostración
 (`public/demo/Cancionero`) con la misma estructura, incluidas partituras de metales de ejemplo
 (Castillo fuerte para saxofón y trompeta, Amazing Grace para trompeta). Incluye solo himnos de dominio público:
 Lutero/Cabrera, Heber/Cabrera, Newton, Crosby, Ken y Mohr/Fliedner.
@@ -284,7 +313,7 @@ Scripts opcionales (usan Playwright con Chromium): `node scripts/generate-icons.
 | `src/leader/` | Modo líder: PIN (PBKDF2), sesión en el dispositivo y ventanas |
 | `src/lists/` (outbox) | Cambios pendientes de subir, subida con control de versiones y conflictos |
 | `src/library/` | Biblioteca: secciones (voces, batería, saxofón, trompeta), emparejamiento, transposición de metales, búsqueda |
-| `src/sources/` | Orígenes de datos (demostración; OneDrive en la fase 2) |
+| `src/sources/` | Orígenes de datos: demostración y OneDrive (inicio de sesión con Microsoft y Graph) |
 | `src/sync/` | Sincronización incremental y descarga de PDF/imágenes bajo demanda |
 | `src/db.js` | Almacenamiento local (IndexedDB) |
 | `src/viewers/` | Visores de ChordPro, PDF (pdf.js, carga diferida) e imágenes; página a página o continuo |

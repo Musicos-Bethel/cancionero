@@ -6,7 +6,7 @@
  */
 export const BRAND = {
   name: 'Bethel',
-  logo: import.meta.env.BASE_URL + 'brand/logo.svg',
+  logo: (import.meta.env?.BASE_URL ?? '/') + 'brand/logo.svg',
   logoRatio: 338 / 243,
 };
 
@@ -20,6 +20,18 @@ export const BRAND = {
  *            'library'   → dentro de la carpeta del cancionero
  *                          (necesita Files.ReadWrite)
  */
+/**
+ * Conexión con OneDrive (registro de la app en Microsoft Entra, hecho por el
+ * líder de banda el 23/11/2026). El Id. de aplicación no es secreto.
+ * Solo cuentas personales de Microsoft (`consumers`); plataforma SPA con la
+ * dirección de la app como URI de redirección.
+ */
+export const ONEDRIVE = {
+  clientId: '837f9cf6-8578-477d-bf55-952a19779d8c',
+  authority: 'https://login.microsoftonline.com/consumers/oauth2/v2.0',
+  graph: 'https://graph.microsoft.com/v1.0',
+};
+
 export const WRITE_TARGET = {
   location: 'appFolder',
   listsFolder: 'Listas',
