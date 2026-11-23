@@ -12,7 +12,8 @@ import { createPageStack } from '../viewers/page-stack.js';
 import { createPager } from '../viewers/pager.js';
 import { parseKey, semitoneDiff } from '../music/chords.js';
 import { makeChordTransformer, keyName, shiftKey } from '../music/transpose.js';
-import { createAutoScroller, SPEED_MIN, SPEED_MAX } from '../features/autoscroll.js';
+import { createAutoScroller, SPEED_MIN, SPEED_MAX, durationSeconds } from '../features/autoscroll.js';
+import { createMetronome, beatsPerBar, parseBpm } from '../features/metronome.js';
 import { listenPedal } from '../features/pedal.js';
 import { keepAwake } from '../features/wakelock.js';
 import { openListen } from '../features/listen.js';
@@ -93,6 +94,23 @@ export function SongView({ section, id, query, backHref }) {
   const otherHref = (o) => (list ? songUrl(list, index, o, { ver: o.section }) : songUrl(null, 0, o));
   const OTHER_ICON = { voces: 'mic', bateria: 'drum', saxofon: 'horn', trompeta: 'horn' };
 
+  // Tempo, compás y duración: del propio archivo o, en una partitura PDF, de la
+  // canción de voces. Se leen del texto (no de la biblioteca) para que valgan
+  // también los archivos descargados antes de entender {metronome} y {time}.
+  const metaOf = (s) => {
+    if (!s || s.kind !== 'chordpro') return null;
+    const f = state.files.find((x) => x.path === s.path);
+    return f?.text ? loadSongDoc(f.text, s.ext).meta : null;
+  };
+  const metas = [metaOf(song), song !== vocesSong ? metaOf(vocesSong) : null].filter(Boolean);
+  const pick = (k) => metas.map((m) => m[k]).find(Boolean) || '';
+  const timing = {
+    bpm: parseBpm(pick('tempo') || song.tempo || vocesSong?.tempo),
+    beats: beatsPerBar(pick('time')),
+    duration: pick('duration'),
+  };
+  const songSeconds = durationSeconds(timing.duration);
+
   const cleanups = [];
   const scroller = h('div.song-scroll', { tabindex: '-1' });
   const paper = h('div.song-paper');
@@ -121,6 +139,7 @@ export function SongView({ section, id, query, backHref }) {
     icon('headphones', { size: 21 }),
   );
   const moreBtn = h('button.cap-btn', { 'aria-label': 'Más opciones', onclick: () => moreSheet() }, icon('more', { size: 21 }));
+  const metroBtn = h('button.cap-btn.metro-btn', { 'aria-label': 'Metrónomo', 'aria-pressed': 'false', title: 'Metrónomo', onclick: () => metro.toggle() }, icon('metronome', { size: 21 }));
   const notes = h(
     'div.float-notes',
     fallback ? h('div.note-pill.warn', icon('alert', { size: 15 }), `${missingPartLabel(ver || state.settings.section)}: se muestra la de voces`) : null,
@@ -128,7 +147,7 @@ export function SongView({ section, id, query, backHref }) {
   );
   const topFloat = h(
     'div.float-top',
-    h('div.float-row', h('a.glass-btn.circle', { href: back, 'aria-label': 'Volver' }, icon('back', { size: 22 })), centerCap, h('div.glass-cap', listenBtn, moreBtn)),
+    h('div.float-row', h('a.glass-btn.circle', { href: back, 'aria-label': 'Volver' }, icon('back', { size: 22 })), centerCap, h('div.glass-cap', metroBtn, listenBtn, moreBtn)),
     notes,
   );
 
@@ -143,7 +162,20 @@ export function SongView({ section, id, query, backHref }) {
     h('button.cap-btn', { 'aria-label': 'Más rápido', onclick: () => setSpeed(1) }, icon('plus', { size: 18 })),
   );
   const nextPill = list && next ? h('button.glass-cap.next-pill', { onclick: () => go(next) }, h('span', 'Siguiente: ', h('strong', next.song.title)), icon('next', { size: 15 })) : null;
-  const bottomFloat = h('div.float-bottom', speedCap, nextPill, h('div.float-row', controls, goldBtn));
+  const bpmValue = h('span.cap-value.bpm-value');
+  const beatDot = h('span.beat-dot', { 'aria-hidden': 'true' });
+  const metroCap = h(
+    'div.glass-cap.metro-cap',
+    { 'aria-label': 'Metrónomo' },
+    beatDot,
+    h('button.cap-btn', { 'aria-label': 'Tempo más lento', onclick: () => setBpm(-1) }, icon('minus', { size: 18 })),
+    bpmValue,
+    h('button.cap-btn', { 'aria-label': 'Tempo más rápido', onclick: () => setBpm(1) }, icon('plus', { size: 18 })),
+    h('button.cap-btn', { 'aria-label': 'Parar metrónomo', onclick: () => metro.stop() }, icon('close', { size: 17 })),
+  );
+  // Pulso visible aunque se oculten los controles (y con el móvil en silencio).
+  const pulse = h('div.metro-pulse', { 'aria-hidden': 'true' });
+  const bottomFloat = h('div.float-bottom', metroCap, speedCap, nextPill, h('div.float-row', controls, goldBtn));
 
   const screen = h(
     'div.song-screen',
@@ -153,6 +185,7 @@ export function SongView({ section, id, query, backHref }) {
     h('div.fade-bottom', { 'aria-hidden': 'true' }),
     topFloat,
     bottomFloat,
+    pulse,
   );
   const setControls = (...groups) => {
     const parts = groups.filter(Boolean);
@@ -191,22 +224,59 @@ export function SongView({ section, id, query, backHref }) {
       goldBtn.replaceChildren(icon(a.running ? 'pause' : 'play', { size: 24 }));
       goldBtn.classList.toggle('on', a.running);
       goldBtn.setAttribute('aria-pressed', String(a.running));
-      speedValue.textContent = String(a.speed);
+      speedValue.textContent = a.auto ? 'Auto' : String(a.speed);
       screen.classList.toggle('scrolling', a.running);
       if (a.running) screen.classList.add('scrolled-once'); // desde ahora se muestra la velocidad
     },
   });
-  scrollerApi.setSpeed(6);
+  scrollerApi.setSpeed(state.settings.scrollSpeed ?? 4);
   goldBtn.onclick = (e) => {
     e.stopPropagation();
     scrollerApi.toggle();
     if (scrollerApi.running) hideChrome();
   };
+  // Cada canción recuerda su velocidad; la última elegida es la inicial de las
+  // demás en este dispositivo (las que tienen duración empiezan en «Auto»).
   const setSpeed = (d) => {
-    scrollerApi.setSpeed(Math.max(SPEED_MIN, Math.min(SPEED_MAX, scrollerApi.speed + d)));
+    scrollerApi.setSpeed(Math.max(SPEED_MIN, Math.min(SPEED_MAX, scrollerApi.effectiveLevel + d)));
     db.prefPatch(song.key, { speed: scrollerApi.speed });
+    if (scrollerApi.speed !== state.settings.scrollSpeed) setSettings({ scrollSpeed: scrollerApi.speed });
+  };
+  const speedLabel = () => (scrollerApi.auto ? `Auto (${timing.duration})` : String(scrollerApi.speed));
+  const useAuto = () => {
+    scrollerApi.setAuto(songSeconds);
+    db.prefPatch(song.key, { speed: null });
   };
   cleanups.push(() => scrollerApi.destroy());
+
+  // ---------- Metrónomo (tempo de la canción; cada canción recuerda el suyo)
+  let pulseTimer = 0;
+  const metro = createMetronome({
+    bpm: timing.bpm ?? 100,
+    beats: timing.beats,
+    onBeat: (b) => {
+      for (const el of [beatDot, pulse]) {
+        el.classList.remove('on', 'accent');
+        void el.offsetWidth;
+        el.classList.add('on');
+        if (b === 0) el.classList.add('accent');
+      }
+      clearTimeout(pulseTimer);
+      pulseTimer = setTimeout(() => [beatDot, pulse].forEach((el) => el.classList.remove('on', 'accent')), 120);
+    },
+    onChange: (m) => {
+      bpmValue.textContent = `${m.bpm} bpm`;
+      metroBtn.classList.toggle('on', m.running);
+      metroBtn.setAttribute('aria-pressed', String(m.running));
+      screen.classList.toggle('metro-on', m.running);
+    },
+  });
+  bpmValue.textContent = `${metro.bpm} bpm`;
+  const setBpm = (d) => {
+    metro.setBpm(metro.bpm + d);
+    db.prefPatch(song.key, { bpm: metro.bpm });
+  };
+  cleanups.push(() => (metro.destroy(), clearTimeout(pulseTimer)));
 
   // ---------- Toque en la partitura: muestra/oculta controles o pausa
   let down = null;
@@ -303,7 +373,11 @@ export function SongView({ section, id, query, backHref }) {
   function moreSheet() {
     const rows = [
       ...moreRows.map((f) => f(stepper)),
-      song.kind === 'chordpro' || stack ? stepper('Velocidad de desplazamiento', () => String(scrollerApi.speed), () => setSpeed(-1), () => setSpeed(1)) : null,
+      song.kind === 'chordpro' || stack ? stepper('Velocidad de desplazamiento', speedLabel, () => setSpeed(-1), () => setSpeed(1)) : null,
+      (song.kind === 'chordpro' || stack) && songSeconds && !scrollerApi.auto
+        ? h('button.sheet-row.action', { onclick: () => (s.close(), useAuto()) }, icon('scrollV', { size: 20 }), h('span.sheet-row-label', `Ajustar a la duración (${timing.duration})`))
+        : null,
+      stepper('Tempo del metrónomo', () => `${metro.bpm} bpm`, () => setBpm(-1), () => setBpm(1)),
       h(
         'button.sheet-row.action',
         { onclick: () => (s.close(), isImmersive() ? exitImmersive() : enterImmersive()) },
@@ -353,6 +427,8 @@ export function SongView({ section, id, query, backHref }) {
   async function init() {
     const prefs = await db.prefGet(song.key);
     if (prefs.speed) scrollerApi.setSpeed(prefs.speed);
+    else if (songSeconds) scrollerApi.setAuto(songSeconds);
+    if (prefs.bpm) metro.setBpm(prefs.bpm);
     if (song.kind === 'chordpro') await initChordPro(prefs);
     else await initPages(prefs);
   }

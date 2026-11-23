@@ -23,6 +23,9 @@ líder de banda; ambos son propietarios de la organización.
 - **Deslizar entre canciones** de una lista también en las de texto: solo un gesto claramente horizontal, sin estorbar el desplazamiento ni la selección de texto.
 - **Pantalla completa:** oculta las barras y un toque las muestra. En Android usa la pantalla completa del sistema; en iPhone, donde las PWA no pueden, se oculta la interfaz de la app.
 - **Desplazamiento automático** con velocidad ajustable. Un toque en la partitura muestra u oculta los controles.
+  - Si la canción tiene duración (`{time: 6:58}` de SongBook), empieza en **Auto**: la velocidad se calcula para recorrerla entera en ese tiempo. En «Más» se puede volver a Auto.
+  - Cada canción recuerda su velocidad en el dispositivo, y la última elegida es la inicial de las demás (no vuelve a un valor fijo, como hace SongBook en el iPad).
+- **Metrónomo** (botón junto a «Escuchar»): suena al tempo de la canción (`{metronome}` o `{tempo}`; en una partitura PDF, el de su canción de voces) y marca el primer tiempo del compás. Se ajusta con − y + y cada canción recuerda su tempo. Un punto dorado marca el pulso aunque se oculten los controles. Funciona sin conexión; en iPhone no suena con el interruptor de silencio puesto.
 - **Pedal Bluetooth:** AvPág/↓ baja la pantalla (al final pasa a la siguiente canción de la lista), RePág/↑ sube, →/← cambian de canción, Espacio inicia o pausa el desplazamiento. En PDF/imágenes, el pedal pasa página y después canción. Las teclas se pueden cambiar en Ajustes.
 - **Categorías** en Canciones, con su número de canciones (ver más abajo).
 - **Escuchar:** cada canción puede tener su enlace (YouTube se abre en su app si está instalada), y cada lista tiene «Escuchar la lista» para preparar el ensayo.
@@ -376,7 +379,7 @@ Scripts opcionales (usan Playwright con Chromium): `node scripts/generate-icons.
 | `src/sync/` | Sincronización incremental y descarga de PDF/imágenes bajo demanda |
 | `src/db.js` | Almacenamiento local (IndexedDB) |
 | `src/viewers/` | Visores de ChordPro, PDF (pdf.js, carga diferida) e imágenes; página a página o continuo |
-| `src/features/` | Desplazamiento automático, pedal, gestos, pantalla completa, escuchar, copias, instalación |
+| `src/features/` | Desplazamiento automático, metrónomo, pedal, gestos, pantalla completa, escuchar, copias, instalación |
 | `src/views/` | Pantallas: Inicio, Canciones, Listas, Canción, Ajustes, editor de listas, editor de canciones y editor de batería |
 
 ### Caché y sin conexión
