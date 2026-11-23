@@ -18,6 +18,7 @@ import { SongView } from './views/song.js';
 import { SettingsView } from './views/settings.js';
 import { ListEditorView } from './views/list-editor.js';
 import { SongEditorView } from './views/song-editor.js';
+import { DrumEditorView } from './views/drum-editor.js';
 import { flushOutbox } from './lists/outbox-runner.js';
 import { plural } from './ui/format.js';
 
@@ -128,7 +129,7 @@ function parseHash() {
   return { path, query: new URLSearchParams(qs), raw };
 }
 
-const isEditor = (view) => view?.el.classList.contains('list-editor') || view?.el.classList.contains('song-editor');
+const isEditor = (view) => view?.el.classList.contains('list-editor') || view?.el.classList.contains('song-editor') || view?.el.classList.contains('drum-editor');
 
 function route() {
   const { path, query, raw } = parseHash();
@@ -151,6 +152,8 @@ function route() {
   else if (parts[0] === 'listas') view = ListsView();
   else if (parts[0] === 'editor' && parts[1] === 'nueva') view = SongEditorView({ id: null });
   else if (parts[0] === 'editor' && parts[1] === 'voces') view = SongEditorView({ id: parts.slice(2).join('/') });
+  else if (parts[0] === 'editor' && parts[1] === 'bateria-nueva') view = DrumEditorView({ id: null, query });
+  else if (parts[0] === 'editor' && parts[1] === 'bateria') view = DrumEditorView({ id: parts.slice(2).join('/'), query });
   else if (parts[0] === 'lista') view = ListDetailView({ id: parts.slice(1).join('/') });
   else if (songMode) view = SongView({ section: parts[1], id: parts[2] ?? '', query, backHref: lastListHref });
   else if (parts[0] === 'ajustes') view = SettingsView();

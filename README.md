@@ -30,6 +30,7 @@ líder de banda; ambos son propietarios de la organización.
 - **Copia de seguridad** de los ajustes personales y de los archivos importados.
 - **Modo líder con PIN** para crear, editar, duplicar y borrar las listas desde el móvil (ver más abajo).
 - **Editor de canciones** (modo líder): crear y editar canciones de voces escribiendo los acordes encima de la letra, con vista previa. Se guardan en ChordPro.
+- **Editor de hojas de batería** (modo líder): ritmos en cuadrícula que se rellenan tocando las casillas y hoja de ruta por secciones. Se guardan en ChordPro.
 - **Importar canciones a un solo dispositivo** (también exportaciones de SongBook y carpetas en .zip), para probar con canciones reales sin subirlas a ningún sitio.
 - **Actualizaciones automáticas:** una versión nueva se instala sola, salvo si hay una canción abierta o una lista a medio editar; en ese caso espera hasta que se cierre.
 
@@ -162,6 +163,34 @@ dispositivo hasta que se cierra la app.
 - **Canciones compartidas:** editar una crea una copia en el dispositivo con el mismo nombre de archivo, que la sustituye allí (las listas y la batería la siguen encontrando). «Volver a la versión compartida» la deshace.
 - **Borrador** automático con recuperación, como en el editor de listas. «Borrar importadas» no borra las canciones creadas con el editor.
 
+### Editor de hojas de batería
+
+- **Crear:** *Canciones → Batería → Nueva hoja de batería*, o desde una canción de voces sin batería: menú «Más» → «Crear hoja de batería» (ya sale con su título y tempo, para que queden emparejadas).
+- **Editar:** en una hoja de batería de texto, menú «Más» → «Editar hoja de batería».
+- **Datos:** canción (con sugerencias de los títulos de voces; avisa de si quedará emparejada), descripción, tempo y compás.
+- **Ritmos como cuadrícula:** una fila por instrumento y una casilla por paso. Al tocar una casilla se pone un golpe; otra vez, un acento; otra, se quita. Se elige el número de tiempos (1–8) y la subdivisión (negras, corcheas, tresillos, semicorcheas, sextillos); al cambiarla se conservan los golpes que caen en el mismo sitio. Instrumentos: plato, ride, charles, charles con el pie, toms, caja, aro, tom base y bombo. Cada ritmo se puede duplicar.
+- **Hoja de ruta:** las partes de la canción en orden (sección, ritmo y compases, nota), reordenables arrastrando. Botones para añadir Intro, Estrofa, Coro, Puente… y para poner el nombre de un ritmo.
+- **Vista previa y ChordPro**, como en el editor de canciones. Lo que el editor no entiende (un coro con texto, una tablatura que no es de batería) se conserva tal cual.
+- **Formato** (ChordPro, se abre también en SongBook como tablatura):
+  ```
+  {title: Castillo fuerte}
+  {tempo: 76}
+  {time: 4/4}
+
+  {start_of_tab: Ritmo A · estrofas}
+         1 & 2 & 3 & 4 &
+  Ch   | x x x x x x x x |
+  Caja | . . o . . . o . |
+  Bom  | o . . . o . . . |
+  {end_of_tab}
+
+  {c: Estrofa 1 · Ritmo A · 8 compases}
+  {ci: Entrar suave}
+  ```
+  `x` platos, `o` tambores y bombo, en mayúscula con acento, `.` nada. También se leen cuadrículas sin espacios (`HH|x-x-x-x-|`).
+- **En el lector** los ritmos se ven como cuadrícula (× platos, ● tambores, acentos en dorado) en lugar de texto monoespaciado.
+- **Dónde se guarda:** igual que las canciones de voces: en el dispositivo (`local/Bateria/`), con «Exportar .cho», copia de una hoja compartida y borrador automático.
+
 ### PIN
 
 - **Dónde se guarda:** en `ajustes-lider.json`, junto a las listas. El archivo no contiene el PIN, sino
@@ -278,6 +307,7 @@ Scripts opcionales (usan Playwright con Chromium): `node scripts/generate-icons.
 | Carpeta | Contenido |
 |---|---|
 | `src/chordpro/` | Lector de ChordPro, conversión de `.txt` y del editor (`compose.js`: ChordPro ⇄ acordes encima) |
+| `src/drums/` | Hojas de batería: cuadrícula de ritmos y hoja de ruta ⇄ ChordPro |
 | `src/music/` | Acordes, notación americana/latina y transposición |
 | `src/lists/` | Formato de las listas por evento |
 | `src/links/` | Enlaces para escuchar (YouTube, archivos .url/.webloc/.txt/.csv) |
@@ -289,7 +319,7 @@ Scripts opcionales (usan Playwright con Chromium): `node scripts/generate-icons.
 | `src/db.js` | Almacenamiento local (IndexedDB) |
 | `src/viewers/` | Visores de ChordPro, PDF (pdf.js, carga diferida) e imágenes; página a página o continuo |
 | `src/features/` | Desplazamiento automático, pedal, gestos, pantalla completa, escuchar, copias, instalación |
-| `src/views/` | Pantallas: Inicio, Canciones, Listas, Canción, Ajustes, editor de listas y editor de canciones |
+| `src/views/` | Pantallas: Inicio, Canciones, Listas, Canción, Ajustes, editor de listas, editor de canciones y editor de batería |
 
 ### Caché y sin conexión
 
@@ -333,7 +363,7 @@ envíe el Id. de aplicación de Microsoft Entra.
 | Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio en `Musicos-Bethel`, publicada en la dirección nueva y `main` protegida |
 | 2b | Lectura desde OneDrive | Falta el registro en Microsoft Entra (lo hace el líder de banda) |
 | 2c | Escritura en OneDrive (listas y canciones creadas) | Después de 2b; falta decidir `appFolder` o `library` |
-| — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Propuesto, sin empezar; no depende de OneDrive |
+| — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | En revisión (PR #11) |
 
 **Pendiente de decidir o confirmar:**
 - La estructura real de carpetas de OneDrive.

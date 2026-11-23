@@ -319,6 +319,24 @@ export function SongView({ section, id, query, backHref }) {
             icon('next', { size: 16, cls: 'icon chev' }),
           )
         : null,
+      isLeader() && song.section === 'bateria' && song.kind === 'chordpro'
+        ? h(
+            'a.sheet-row.action',
+            { href: link(`/editor/bateria/${encodeURIComponent(song.id)}`), onclick: () => s.close() },
+            icon('edit', { size: 20 }),
+            h('span.sheet-row-label', 'Editar hoja de batería'),
+            icon('next', { size: 16, cls: 'icon chev' }),
+          )
+        : null,
+      isLeader() && song.section === 'voces' && !others.some((o) => o.section === 'bateria')
+        ? h(
+            'a.sheet-row.action',
+            { href: link(`/editor/bateria-nueva?de=${encodeURIComponent(song.id)}`), onclick: () => s.close() },
+            icon('drum', { size: 20 }),
+            h('span.sheet-row-label', 'Crear hoja de batería'),
+            icon('next', { size: 16, cls: 'icon chev' }),
+          )
+        : null,
       ...others.map((o) =>
         h(
           'a.sheet-row.action',

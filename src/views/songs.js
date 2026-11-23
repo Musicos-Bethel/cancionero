@@ -103,11 +103,13 @@ export function SongsView({ query }) {
 
   el.append(
     pageHeader('Canciones', null, sectionSwitch()),
-    isLeader() && section === 'voces'
+    isLeader() && (section === 'voces' || section === 'bateria')
       ? h(
           'div.leader-tools',
           h('span.leader-tag', icon('unlock', { size: 16 }), 'Modo líder'),
-          h('a.btn.small.primary', { href: link('/editor/nueva') }, icon('plus', { size: 16 }), 'Nueva canción'),
+          section === 'voces'
+            ? h('a.btn.small.primary', { href: link('/editor/nueva') }, icon('plus', { size: 16 }), 'Nueva canción')
+            : h('a.btn.small.primary', { href: link('/editor/bateria-nueva') }, icon('plus', { size: 16 }), 'Nueva hoja de batería'),
         )
       : null,
     h('label.search', icon('search', { size: 18 }), input),
