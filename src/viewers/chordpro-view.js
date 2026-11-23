@@ -1,4 +1,5 @@
 import { h } from '../ui/dom.js';
+import { parseGrid, countLine, instrumentLabel } from '../drums/drum-sheet.js';
 
 /**
  * Pinta un documento ChordPro. Cada línea se divide en "palabras" que no se
@@ -16,7 +17,8 @@ export function renderSong(doc, { chord = (c) => c } = {}) {
     const el = h(`section.block.block-${block.type}`);
     if (block.label && block.type !== 'none') el.append(h('div.block-label', block.label));
     if (block.type === 'tab' || block.type === 'grid') {
-      el.append(h('pre.tab-block', block.lines.map((l) => l.text).join('\n')));
+      const grid = block.type === 'tab' ? parseGrid(block.lines.map((l) => l.text)) : null;
+      el.append(grid ? renderDrumGrid(grid) : h('pre.tab-block', block.lines.map((l) => l.text).join('\n')));
     } else {
       let emptyRun = 0;
       for (const line of block.lines) {
@@ -89,4 +91,28 @@ function chunk(seg, text, chord) {
     seg.chord ? h(seg.annotation ? 'span.ch.annotation' : 'span.ch', c) : null,
     h('span.ly', text || (seg.chord ? '​' : '')),
   );
+}
+
+/**
+ * Ritmo de batería como cuadrícula: una fila por instrumento y una columna por
+ * paso, con la cuenta arriba. Platos con ×, tambores con un punto relleno; los
+ * acentos, más grandes y en dorado.
+ */
+export function renderDrumGrid({ beats, spb, rows }) {
+  const n = beats * spb;
+  const grid = h('div.drum-grid', { role: 'table', style: `--steps: ${n}`, 'aria-label': 'Ritmo' });
+  const beatCls = (i) => (i % spb === 0 ? '.beat' : '') + (i % spb === 0 && i ? '.sep' : '');
+  grid.append(
+    h('span.dg-label', { role: 'columnheader' }),
+    ...countLine(beats, spb).map((t, i) => h(`span.dg-count${beatCls(i)}${/^\d+$/.test(t) ? '.num' : ''}`, { role: 'columnheader' }, t === '.' ? '' : t)),
+  );
+  for (const r of rows) {
+    grid.append(h('span.dg-label', { role: 'rowheader', title: instrumentLabel(r.inst) }, r.inst));
+    r.cells.forEach((c, i) => {
+      const kind = c === '.' ? 'rest' : c === 'X' || c === 'O' ? 'acc' : c === 'x' || c === 'o' ? 'hit' : 'other';
+      const shape = kind === 'rest' || kind === 'other' ? '' : c.toLowerCase() === 'x' ? '.cym' : '.drum';
+      grid.append(h(`span.dg-cell.${kind}${shape}${beatCls(i)}`, { role: 'cell' }, kind === 'other' ? c : h('i')));
+    });
+  }
+  return h('div.drum-grid-wrap', grid);
 }
