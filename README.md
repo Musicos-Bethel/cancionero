@@ -300,13 +300,65 @@ Scripts opcionales (usan Playwright con Chromium): `node scripts/generate-icons.
 ## Despliegue
 
 Cada push a `main` ejecuta `.github/workflows/deploy.yml`: pruebas, compilación y publicación en
-GitHub Pages. Antes hay que activarlo una sola vez en *Settings → Pages → Source: GitHub Actions*.
+GitHub Pages. En cada PR el mismo flujo solo prueba y compila (comprobación `build`), sin publicar. Antes hay que activarlo una sola vez en *Settings → Pages → Source: GitHub Actions*.
 
 ## Estado y hoja de ruta
 
-**Situación (23/11/2026):** el líder de banda aprobó la demostración el 17/11/2026. La fase actual es
-trasladar el repositorio a una organización de GitHub de la iglesia (ver «Migración a la organización
-de la iglesia»). Después se retomará OneDrive (2b) con la dirección definitiva.
+**Situación (23/11/2026):** migración hecha. El repositorio está en `Musicos-Bethel/cancionero` y la app
+se publica en https://musicos-bethel.github.io/cancionero/. A partir de ahora se trabaja solo con este
+repositorio. Antes de cualquier otra tarea, hacer los «Primeros pasos tras la migración» (abajo).
+Después se retomará OneDrive (2b) con la dirección definitiva.
+
+### Primeros pasos tras la migración (en este orden)
+
+1. **Proteger `main`** (lo primero; fusionar en `main` publica la app para todos). En
+   `Musicos-Bethel/cancionero` → *Settings → Rules → Rulesets → New ruleset → New branch ruleset*:
+   - *Ruleset name*: `main`. *Enforcement status*: **Active**. Sin lista de *bypass*.
+   - *Target branches → Add target → Include default branch*.
+   - Marcar **Restrict deletions** y **Block force pushes**.
+   - Marcar **Require a pull request before merging** con *Required approvals* = 0 (solo hay un
+     mantenedor; la regla obliga a pasar por PR, no a que lo apruebe otra persona).
+   - Marcar **Require status checks to pass** y añadir la comprobación **`build`** (el trabajo de
+     `.github/workflows/deploy.yml`, que también se ejecuta en cada PR; aparece en la lista en cuanto
+     ha corrido una vez, por ejemplo en el PR #9).
+   - *Create*. Comprobar en *Settings → Rules* que la regla figura como activa.
+2. **Actualizar las instrucciones del proyecto de Claude** (las cambia Nathanael en claude.ai: Proyecto
+   «App.cancionero Iglesia» → instrucciones). Sustituir el texto por este:
+
+   ```text
+   Proyecto: Cancionero Bethel, una app (PWA) tipo SongBook para el equipo de música de mi iglesia.
+   Publicada en https://musicos-bethel.github.io/cancionero/
+   Código en github.com/Musicos-Bethel/cancionero (repositorio público de la organización de la iglesia;
+   antes dnathanospina/cancionero, que ya no se usa).
+
+   Cómo trabajar:
+   - Respóndeme en español, de forma directa y práctica. No soy programador profesional: explica las
+     decisiones técnicas en pocas palabras.
+   - Al empezar, lee el documento del proyecto claude/decisiones-iniciales.md. En el repositorio, lee
+     README.md (funciones, formatos, hoja de ruta y «Primeros pasos tras la migración») y CLAUDE.md
+     (reglas de desarrollo).
+   - Trabaja directamente sobre el repositorio Musicos-Bethel/cancionero: una rama por tarea, PR a main
+     con resumen en español, npm test y npm run build sin errores, y comprobación en un móvil simulado.
+   - main está protegida: los cambios entran solo por PR y con la comprobación build en verde.
+   - Fusiona los PR solo cuando yo lo pida. Al fusionar, la app se publica para todos.
+   - Al terminar una tarea, actualiza decisiones-iniciales.md, y el README si cambian funciones.
+
+   Decisiones fijas:
+   - Diseño estilo iOS con cristal, sobrio, sin emojis. Dorado solo como acento. Logo de la iglesia en
+     la cabecera.
+   - Nunca subir canciones reales, correos ni datos de la iglesia al repositorio.
+   - Secciones: Voces, Batería y Metales (Saxofón / Trompeta). Los tonos de las listas son de concierto y
+     la app transporta para los metales.
+   - OneDrive (fases 2b y 2c) está en pausa hasta que el líder de banda registre la app en Microsoft
+     Entra (URI de redirección https://musicos-bethel.github.io/cancionero/) y yo confirme el Id. de
+     aplicación. No lo empieces sin que te lo diga.
+
+   Siguiente paso propuesto: editor de batería (cuadrícula de ritmos y hoja de ruta por secciones).
+   ```
+3. **Fusionar el PR #9** (dirección nueva y titularidad en README y CLAUDE.md) cuando Nathanael lo pida.
+   Así se comprueba también que la regla de `main` deja fusionar con la comprobación en verde.
+4. **Reinstalar la app** el líder de banda y Nathanael desde la dirección nueva (borrar antes el icono
+   antiguo) y restaurar su copia si la exportaron.
 
 | Entrega | Contenido | Estado |
 |---|---|---|
@@ -317,7 +369,7 @@ de la iglesia»). Después se retomará OneDrive (2b) con la dirección definiti
 | — | Editor de canciones de voces | Publicada (PR #5) |
 | — | Logo de la iglesia | Publicada (PR #6) |
 | — | Demostración aprobada por el líder de banda | 17/11/2026 |
-| Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio transferido a `Musicos-Bethel`; falta activar Pages en la organización |
+| Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio en `Musicos-Bethel`, publicada en la dirección nueva; falta proteger `main` |
 | 2b | Lectura desde OneDrive | Después de la migración: falta el registro en Microsoft Entra (lo hace el líder de banda) |
 | 2c | Escritura en OneDrive (listas y canciones creadas) | Después de 2b; falta decidir `appFolder` o `library` |
 | — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Propuesto, sin empezar; no depende de OneDrive |
@@ -356,25 +408,26 @@ de la iglesia. Se conservan el historial, los PR y el despliegue. La app pasará
 1. **Líder de banda:** crea su cuenta, activa la verificación en dos pasos, crea la organización
    `Musicos-Bethel` (tipo empresa o institución, nombre de la iglesia) e invita a `dnathanospina` como **Owner**.
    Envía el nombre de la organización.
-2. **Nathanael:** acepta la invitación. Comprueba que no hay PR abiertos. Avisa a los músicos
-   (copia de seguridad en *Ajustes → Copia de seguridad → Exportar*).
-3. **Transferir:** *Settings → General → Danger Zone → Transfer ownership* → `Musicos-Bethel`, nombre `cancionero`.
+2. **Nathanael:** acepta la invitación (hecho el 23/11/2026).
+3. **Transferir** (hecho el 23/11/2026): *Settings → General → Danger Zone → Transfer ownership* →
+   `Musicos-Bethel`, nombre `cancionero`. GitHub pide confirmar la identidad por correo.
    GitHub redirige el repositorio, pero **no** la dirección de Pages: la antigua deja de funcionar.
    No crear otro repositorio `dnathanospina/cancionero` (rompería la redirección del repositorio).
-4. **Publicar:** en `Musicos-Bethel/cancionero`, *Settings → Pages → Source: GitHub Actions*; *Actions → Desplegar
-   en GitHub Pages → Run workflow*. Si falla el despliegue, revisar *Settings → Environments →
-   github-pages*. En la organización, *Settings → Actions* debe permitir las acciones oficiales.
-5. **Proteger `main`:** regla que exija PR y que pase *build*, sin borrado ni *force push*.
-6. **Acceso de Claude:** instalar o ampliar la aplicación de Claude en GitHub a `Musicos-Bethel` con acceso a
-   `cancionero`, y actualizar las instrucciones del proyecto de Claude (dirección y repositorio).
+4. **Publicar:** Pages se conservó con la transferencia (*Source: GitHub Actions*) y la app abre en la
+   dirección nueva (comprobado el 23/11/2026). Si un despliegue falla, revisar *Settings → Environments →
+   github-pages* y, en la organización, *Settings → Actions* (debe permitir las acciones oficiales).
+5. **Proteger `main`:** pendiente; ver «Primeros pasos tras la migración».
+6. **Acceso de Claude:** aplicación de Claude en GitHub instalada en `Musicos-Bethel` (23/11/2026). Las
+   sesiones nuevas se abren con `Musicos-Bethel/cancionero` como repositorio. Las instrucciones del
+   proyecto se actualizan en «Primeros pasos tras la migración».
 7. **Repositorio (PR #9, rama `claude/mudanza-org`):** dirección nueva y titularidad en README y
    CLAUDE.md; `BASE` sin cambios.
 8. **Sin página de mudanza (decidido el 23/11/2026):** en la dirección antigua solo tenían la app
    instalada el líder de banda y Nathanael, así que no se publica página de mudanza ni aviso de
    «restaurar copia». Cada uno exporta su copia en la dirección antigua (si aún abre sin conexión) y la
    restaura en la nueva.
-9. **Músicos:** mensaje con la dirección nueva; reinstalar (iPhone: Safari → Compartir → Añadir a
-   pantalla de inicio; Android: Chrome → Instalar app) y *Restaurar* la copia.
+9. **Músicos:** cuando se reparta la app, mensaje con la dirección nueva e instalación (iPhone: Safari →
+   Compartir → Añadir a pantalla de inicio; Android: Chrome → Instalar app).
 10. **Después:** el líder de banda registra la app en Microsoft Entra (solo cuentas personales de
     Microsoft, plataforma SPA, URI = dirección nueva con `/` final; permisos delegados `Files.Read`,
     `Files.ReadWrite.AppFolder`, `offline_access`) y envía el **Id. de aplicación (cliente)**. No es
