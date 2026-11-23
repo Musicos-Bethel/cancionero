@@ -4,6 +4,11 @@ PWA de cancionero (tipo SongBook) para el equipo de música de la iglesia Bethel
 Nathanael (pianista, no programador profesional): explicaciones en español, directas y prácticas.
 El README describe todas las funciones, los formatos y la hoja de ruta: léelo antes de cambiar algo.
 
+Repositorio: `Musicos-Bethel/cancionero` (organización de la iglesia; antes `dnathanospina/cancionero`).
+App publicada: https://musicos-bethel.github.io/cancionero/
+Al empezar una sesión, mira en el README «Primeros pasos tras la migración»: si queda alguno sin hacer
+(proteger `main`, instrucciones del proyecto), va antes que cualquier otra tarea.
+
 ## Reglas
 - **Idioma:** todo en español de España (interfaz, comentarios, commits, PR). Interfaz sobria, sin emojis
   ni rótulos en mayúsculas.
