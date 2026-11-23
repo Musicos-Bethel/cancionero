@@ -8,25 +8,28 @@ import { plainToChordPro, SECTION_HEADER } from './txt-import.js';
  */
 
 /** Campos del formulario y la directiva con la que se guardan. */
-export const FIELDS = [
-  ['title', 'title'],
-  ['artist', 'artist'],
-  ['key', 'key'],
-  ['tempo', 'tempo'],
-  ['time', 'time'],
-];
 const FIELD_NAMES = new Map([
   ['title', 'title'],
   ['artist', 'artist'],
   ['composer', 'artist'],
+  ['subtitle', 'artist'],
   ['key', 'key'],
   ['tempo', 'tempo'],
+  ['metronome', 'tempo'],
   ['time', 'time'],
+  ['duration', 'duration'],
 ]);
+/** {time: 6:58} en SongBook es la duración, no el compás. */
+const DURATION = /^\d{1,2}:\d{2}$/;
 const TAG_NAMES = new Set(['tag', 'tags', 'category', 'categories', 'categoria', 'categorias', 'x_tag', 'x_tags', 'x_category', 'x_categories', 'x_sbp_tags', 'x_sbp_tag', 'x_spb_tag']);
 const LINK_NAMES = new Set(['x_youtube', 'youtube', 'x_link', 'link', 'x_url', 'url', 'x_audio', 'audio']);
 
-export const emptySong = () => ({ title: '', artist: '', key: '', tempo: '', time: '', tags: [], link: '', body: '' });
+/**
+ * `artistTag`: SongBook guarda el autor en {subtitle}; se respeta al guardar.
+ * `tempoTag`: con qué directiva se guarda el tempo. SongBook usa {metronome}
+ * (así su metrónomo lo encuentra); se respeta {tempo} si el archivo ya lo usaba.
+ */
+export const emptySong = () => ({ title: '', artist: '', key: '', artistTag: 'artist', tempo: '', tempoTag: 'metronome', time: '', duration: '', tags: [], link: '', body: '' });
 
 /**
  * Separa un archivo ChordPro en campos ({title, artist, key, tempo, time, tags,
@@ -38,8 +41,13 @@ export function splitSongFile(text) {
   for (const line of String(text ?? '').replace(/\r\n?/g, '\n').split('\n')) {
     const d = /^\s*\{/.test(line) ? parseDirective(line) : null;
     if (d && FIELD_NAMES.has(d.name)) {
-      const k = FIELD_NAMES.get(d.name);
-      if (!song[k]) song[k] = d.value;
+      let k = FIELD_NAMES.get(d.name);
+      if (k === 'time' && DURATION.test(d.value.trim())) k = 'duration';
+      if (!song[k]) {
+        song[k] = d.value;
+        if (k === 'artist') song.artistTag = d.name === 'subtitle' ? 'subtitle' : 'artist';
+        if (k === 'tempo') song.tempoTag = d.name === 'tempo' ? 'tempo' : 'metronome';
+      }
       continue;
     }
     if (d && TAG_NAMES.has(d.name)) {
@@ -65,7 +73,12 @@ export function buildSongFile(song, bodyChordPro) {
     const v = String(value ?? '').replace(/[{}]/g, ' ').replace(/\s+/g, ' ').trim();
     if (v) head.push(`{${name}: ${v}}`);
   };
-  for (const [k, name] of FIELDS) add(name, song[k]);
+  add('title', song.title);
+  add(song.artistTag === 'subtitle' ? 'subtitle' : 'artist', song.artist);
+  add('key', song.key);
+  add(song.tempoTag === 'tempo' ? 'tempo' : 'metronome', song.tempo);
+  add('time', song.time);
+  add('time', song.duration);
   for (const t of song.tags ?? []) add('tag', t);
   add('x_youtube', song.link);
   const body = String(bodyChordPro ?? '').replace(/\r\n?/g, '\n').replace(/\s+$/, '');
@@ -129,5 +142,7 @@ export const plainToBody = (plain) => plainToChordPro(plain);
 export function validateSong(song) {
   if (!song.title.trim()) return 'Falta el título.';
   if (song.link && !/^https?:\/\//i.test(song.link.trim())) return 'El enlace debe empezar por https://';
+  if (song.duration?.trim() && !DURATION.test(song.duration.trim())) return 'La duración se escribe como 4:30.';
+  if (song.time?.trim() && DURATION.test(song.time.trim())) return 'El compás se escribe como 4/4 (4:30 iría en Duración).';
   return null;
 }
