@@ -326,34 +326,54 @@ Después se retomará OneDrive (2b) con la dirección definitiva.
    «App.cancionero Iglesia» → instrucciones). Sustituir el texto por este:
 
    ```text
-   Proyecto: Cancionero Bethel, una app (PWA) tipo SongBook para el equipo de música de mi iglesia.
-   Publicada en https://musicos-bethel.github.io/cancionero/
-   Código en github.com/Musicos-Bethel/cancionero (repositorio público de la organización de la iglesia;
-   antes dnathanospina/cancionero, que ya no se usa).
+   Proyecto: Cancionero Bethel, una app (PWA) tipo SongBook para el equipo de música de la iglesia Bethel. Sirve para leer canciones con acordes, partituras de batería y de metales, y listas por evento, sin licencias externas.
 
-   Cómo trabajar:
-   - Respóndeme en español, de forma directa y práctica. No soy programador profesional: explica las
-     decisiones técnicas en pocas palabras.
-   - Al empezar, lee el documento del proyecto claude/cancionero-migrado.md. En el repositorio, lee
-     README.md (funciones, formatos, hoja de ruta y «Primeros pasos tras la migración») y CLAUDE.md
-     (reglas de desarrollo).
-   - Trabaja directamente sobre el repositorio Musicos-Bethel/cancionero: una rama por tarea, PR a main
-     con resumen en español, npm test y npm run build sin errores, y comprobación en un móvil simulado.
+   Dónde está
+   - App publicada: https://musicos-bethel.github.io/cancionero/
+   - Código: github.com/Musicos-Bethel/cancionero (repositorio público de la organización de la iglesia). El repositorio antiguo dnathanospina/cancionero ya no se usa.
+   - Propietarios de la organización: Raúl (líder de banda) y yo, Nathanael (dnathanospina).
+   - Documento del proyecto: claude/cancionero-migrado.md (estado, decisiones y pendientes).
+   - Manual para el líder de banda: PDF «Cancionero Bethel – Manual para el líder de banda», en los archivos del proyecto.
+
+   Al empezar cada sesión
+   1. Lee claude/cancionero-migrado.md.
+   2. En el repositorio, lee README.md (funciones, formatos, hoja de ruta y «Primeros pasos tras la migración») y CLAUDE.md (reglas de desarrollo).
+   3. Si queda algún paso de «Primeros pasos tras la migración» sin hacer (por ejemplo, proteger main), hazlo antes que cualquier otra tarea, o dime qué tengo que hacer yo.
+   4. Dime en una o dos frases qué vas a hacer y empieza.
+
+   Cómo comunicarte conmigo
+   - En español de España, directo y práctico.
+   - No soy programador profesional: explica las decisiones técnicas en pocas palabras y con ejemplos de lo que verá el músico en el móvil.
+   - Pregúntame antes de decisiones que no se puedan deshacer o que afecten a todos (publicar, borrar, cambiar la dirección de la app, cuentas o permisos).
+   - Si algo lo tengo que hacer yo (verificar mi identidad en GitHub, aprobar un permiso, pegar unas instrucciones), dímelo paso a paso, con los nombres exactos de los botones.
+
+   Cómo trabajar en el código
+   - Una rama por tarea (claude/…) y un PR a main con un resumen en español: qué cambia y qué se ha comprobado.
    - main está protegida: los cambios entran solo por PR y con la comprobación build en verde.
-   - Fusiona los PR solo cuando yo lo pida. Al fusionar, la app se publica para todos.
-   - Al terminar una tarea, actualiza claude/cancionero-migrado.md, y el README si cambian funciones.
+   - Antes de abrir el PR: npm test y npm run build sin errores, y comprobación en Chrome móvil simulado (412 px): la página no se ensancha y no hay errores en la consola. Si cambia el aspecto, compruébalo también en tamaño tableta y en modo oscuro.
+   - Fusiona los PR solo cuando yo lo pida. Al fusionar, la app se publica para todos los músicos.
+   - Commits con la dirección noreply de GitHub (las indica CLAUDE.md).
+   - Sin dependencias nuevas salvo que haya una buena razón, y explícamela.
+   - Al terminar una tarea, actualiza claude/cancionero-migrado.md (estado, decisiones y pendientes) y el README si cambian funciones o pasos.
 
-   Decisiones fijas:
-   - Diseño estilo iOS con cristal, sobrio, sin emojis. Dorado solo como acento. Logo de la iglesia en
-     la cabecera.
-   - Nunca subir canciones reales, correos ni datos de la iglesia al repositorio.
-   - Secciones: Voces, Batería y Metales (Saxofón / Trompeta). Los tonos de las listas son de concierto y
-     la app transporta para los metales.
-   - OneDrive (fases 2b y 2c) está en pausa hasta que el líder de banda registre la app en Microsoft
-     Entra (URI de redirección https://musicos-bethel.github.io/cancionero/) y yo confirme el Id. de
-     aplicación. No lo empieces sin que te lo diga.
+   Decisiones fijas
+   - Diseño estilo iOS con cristal (Liquid Glass), sobrio, sin emojis ni rótulos en mayúsculas. Dorado solo como acento. Logo de la iglesia en la cabecera. Debe funcionar igual en iPhone (Safari) y Android (Chrome), móvil y tablet.
+   - Tecnología: JavaScript sin framework, Vite, vite-plugin-pwa, IndexedDB, pdf.js y Vitest; publicación con GitHub Actions en GitHub Pages.
+   - Nunca subir al repositorio canciones reales, correos ni datos de la iglesia. La demostración solo lleva himnos de dominio público y arreglos propios.
+   - Secciones: Voces, Batería y Metales (Saxofón / Trompeta). Los tonos de las listas son de concierto y la app transporta para los metales.
+   - La app tiene que funcionar sin conexión durante el culto: nada que dependa de internet en mitad de una canción, y las actualizaciones no deben interrumpir una canción abierta.
+   - El modo líder (PIN) es un cerrojo contra cambios por error, no seguridad fuerte.
 
-   Siguiente paso propuesto: editor de batería (cuadrícula de ritmos y hoja de ruta por secciones).
+   En pausa (no empezar sin que yo lo diga)
+   - OneDrive (fases 2b lectura y 2c escritura). Antes, Raúl debe registrar la app en Microsoft Entra con la URI de redirección https://musicos-bethel.github.io/cancionero/ y enviarme el Id. de aplicación (cliente); yo te lo confirmaré.
+   - Dominio propio: no se usa. Si algún día se cambia, cambia la dirección de la app y todos tendrían que reinstalarla.
+
+   Pendientes conocidos (detalle en claude/cancionero-migrado.md)
+   - Proteger main y fusionar el PR #9 (mudanza a Musicos-Bethel).
+   - Saber qué saxofón usan (alto en Mi♭ o tenor en Si♭), la hora del culto del domingo, el PIN real y el orden de las categorías.
+   - Decidir si el icono de la app pasa a ser el logo.
+
+   Siguiente paso propuesto: editor de batería (cuadrícula de ritmos y hoja de ruta por secciones), que no depende de OneDrive.
    ```
 3. **Fusionar el PR #9** (dirección nueva y titularidad en README y CLAUDE.md) cuando Nathanael lo pida.
    Así se comprueba también que la regla de `main` deja fusionar con la comprobación en verde.
