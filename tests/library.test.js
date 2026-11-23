@@ -85,3 +85,22 @@ test('búsqueda sin tildes y por título o artista', () => {
   assert.deepEqual(r.bateriaSinVoces.map((s) => s.name), ['Amazing Grace']);
   assert.deepEqual(r.noEncontradas.map((x) => x.item.name), ['No existe']);
 });
+
+test('estructura de la biblioteca de SongBook', () => {
+  const layout = { root: 'SongBook', voces: '', bateria: 'Partituras batería', metales: 'Metales', enlaces: 'Enlaces' };
+  assert.deepEqual(classifyPath('Alabanzas/Te alabaré.pro', layout), { section: 'voces', ext: 'pro', kind: 'text', depth: 0 });
+  assert.deepEqual(classifyPath('Canción 1 - Te alabaré + Alaba.pro', layout), { section: 'voces', ext: 'pro', kind: 'text', depth: 0 });
+  assert.deepEqual(classifyPath('Partituras batería/Te alabaré.pdf', layout), { section: 'bateria', ext: 'pdf', kind: 'pdf', depth: 1 });
+  assert.equal(classifyPath('Guitar.chords.txt', layout), null);
+  assert.equal(classifyPath('29-11-26.lst', layout), null);
+});
+
+test('carpetas por defecto: pasa a la nueva si nadie las cambió', async () => {
+  const { migrateLayout, DEFAULT_LAYOUT } = await import('../src/config.js');
+  assert.deepEqual(migrateLayout(undefined), DEFAULT_LAYOUT);
+  assert.deepEqual(migrateLayout({ root: 'Cancionero', voces: 'Voces', bateria: 'Bateria', metales: 'Metales', enlaces: 'Enlaces' }), DEFAULT_LAYOUT);
+  const mine = { root: 'Cancionero', voces: '', bateria: 'Batería', metales: 'Metales', enlaces: 'Enlaces' };
+  assert.deepEqual(migrateLayout(mine), mine);
+  assert.equal(DEFAULT_LAYOUT.voces, '');
+  assert.equal(DEFAULT_LAYOUT.bateria, 'Partituras batería');
+});

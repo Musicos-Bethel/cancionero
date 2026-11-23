@@ -81,6 +81,8 @@ export function classifyPath(path, layout = null) {
   const parts = segs(path);
   const { ext, base } = splitPath(path);
   if (base.startsWith('.') || base.startsWith('~') || !parts.length) return null;
+  // Archivos de acordes de SongBook (Guitar.chords.txt…): no son canciones.
+  if (/\.chords$/i.test(base)) return null;
   if (parts.length === 1 && normalize(parts[0]) === normalize(LEADER_FILE)) {
     return { section: 'config', ext, kind: 'config', depth: 0 };
   }

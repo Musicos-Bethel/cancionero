@@ -46,20 +46,36 @@ export function authorizeUrl({ challenge, state, redirect, prompt = 'select_acco
     state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
-    prompt,
   });
+  if (prompt) q.set('prompt', prompt);
   if (loginHint) q.set('login_hint', loginHint);
   return `${ONEDRIVE.authority}/authorize?${q}`;
 }
 
-/** Va a la página de Microsoft. Al volver, `completeLogin` termina el proceso. */
-export async function startLogin({ returnHash = location.hash, loginHint } = {}) {
+/**
+ * Va a la página de Microsoft. Al volver, `completeLogin` termina el proceso.
+ *  silent: intenta entrar sin enseñar nada (prompt=none). Si Microsoft recuerda
+ *          la cuenta en este navegador, vuelve al instante; si no, la app pasa
+ *          sola al inicio de sesión normal.
+ */
+export async function startLogin({ returnHash = location.hash, loginHint, silent = false } = {}) {
   const verifier = randomString(48);
   const state = randomString(16);
-  localStorage.setItem(LOGIN_KEY, JSON.stringify({ verifier, state, returnHash, at: Date.now() }));
+  localStorage.setItem(LOGIN_KEY, JSON.stringify({ verifier, state, returnHash, loginHint: loginHint ?? null, silent, at: Date.now() }));
   const challenge = await pkceChallenge(verifier);
-  location.assign(authorizeUrl({ challenge, state, redirect: redirectUri(), loginHint }));
+  // Con la cuenta conocida no se enseña el selector de cuentas.
+  const prompt = silent ? 'none' : loginHint ? null : 'select_account';
+  location.assign(authorizeUrl({ challenge, state, redirect: redirectUri(), loginHint, prompt }));
 }
+
+/** Volver a entrar con la última cuenta: primero sin enseñar nada; si no se puede, como siempre. */
+export async function reconnect({ returnHash = location.hash } = {}) {
+  const hint = (await lastAccount())?.user;
+  return startLogin({ returnHash, loginHint: hint, silent: !!hint });
+}
+
+/** Errores con los que Microsoft dice «hace falta que la persona intervenga» (con prompt=none). */
+export const INTERACTION_ERRORS = new Set(['login_required', 'interaction_required', 'consent_required', 'account_selection_required']);
 
 async function tokenRequest(params, fetchFn = fetch) {
   let res;
@@ -96,9 +112,10 @@ export function sessionFromTokens(data, now = Date.now(), previous = null) {
 /**
  * Si la página se abre al volver de Microsoft (?code=…&state=…), cambia el
  * código por la sesión y limpia la dirección. Devuelve:
- *   null                         no venía de Microsoft
- *   { ok: true, account }        sesión iniciada
- *   { ok: false, message }       error o cancelado
+ *   null                              no venía de Microsoft
+ *   { ok: true, account }             sesión iniciada
+ *   { ok: false, interactive: {…} }   el intento silencioso no bastó: hay que ir a Microsoft
+ *   { ok: false, message }            error o cancelado
  */
 export async function completeLogin() {
   const params = new URLSearchParams(location.search);
@@ -114,6 +131,10 @@ export async function completeLogin() {
   history.replaceState(null, '', redirectUri() + (saved?.returnHash || '#/ajustes'));
 
   if (params.has('error')) {
+    // El intento sin enseñar nada no bastó: hay que pasar por la página de Microsoft.
+    if (saved?.silent && INTERACTION_ERRORS.has(params.get('error'))) {
+      return { ok: false, interactive: { returnHash: saved.returnHash || '#/ajustes', loginHint: saved.loginHint ?? undefined } };
+    }
     const cancelled = params.get('error') === 'access_denied';
     return { ok: false, message: cancelled ? 'Se canceló el inicio de sesión.' : params.get('error_description') || params.get('error') };
   }

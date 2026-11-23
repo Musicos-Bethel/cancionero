@@ -12,7 +12,7 @@ import { upcomingLists } from '../library/library.js';
 import { currentSource, reloadLibrary, emitChange } from '../state.js';
 import * as db from '../db.js';
 import { WRITE_TARGET } from '../config.js';
-import { startLogin, signOut, sessionInfo, lastAccount } from '../sources/onedrive-auth.js';
+import { startLogin, reconnect, signOut, sessionInfo, lastAccount } from '../sources/onedrive-auth.js';
 import { glassReason } from '../features/glass.js';
 import { linkReport, SECTION_LABEL, SECTION_SHORT, SECTIONS, isMetal } from '../library/library.js';
 import { pageHeader, link } from '../ui/components.js';
@@ -99,7 +99,7 @@ export function SettingsView() {
       } else {
         status.textContent = acc ? 'La sesión ha caducado. Lo descargado se sigue pudiendo usar; para actualizar, vuelve a iniciar sesión.' : 'Sin iniciar sesión.';
         actions.replaceChildren(
-          h('button.btn.small.primary', { onclick: () => startLogin({ returnHash: '#/ajustes', loginHint: acc?.user }) }, 'Iniciar sesión con Microsoft'),
+          h('button.btn.small.primary', { onclick: () => (acc?.user ? reconnect({ returnHash: '#/ajustes' }) : startLogin({ returnHash: '#/ajustes' })) }, acc ? 'Volver a entrar' : 'Iniciar sesión con Microsoft'),
         );
       }
     });
@@ -110,9 +110,23 @@ export function SettingsView() {
         'p.set-desc.card-note',
         'Inicia sesión con la cuenta de Microsoft compartida del equipo. Microsoft limita la sesión a 24 horas: después, la app sigue funcionando con lo descargado y solo pide iniciar sesión otra vez para actualizar.',
       ),
+      filesNote(),
       state.sync.error ? h('p.set-desc.card-note.error-text', state.sync.error) : null,
       state.sync.folders?.length ? folderChips(state.sync.folders) : null,
     );
+  }
+
+  /** Cuántos archivos hay en OneDrive y cuántos usa la app (para ver de un vistazo si las carpetas encajan). */
+  function filesNote() {
+    const last = state.sync.last;
+    if (!last || last.source !== 'onedrive' || last.total == null) return null;
+    const name = (p) => p.split('/').pop();
+    const lines = [`En la última actualización: ${plural(last.total, 'archivo', 'archivos')} en la carpeta del cancionero y la de la app; la app usa ${last.recognized}.`];
+    if (last.total && !last.recognized) {
+      return h('p.set-desc.card-note.error-text', lines[0], ' Ninguno encaja con las carpetas: revisa «Carpetas en OneDrive».');
+    }
+    if (last.ignored?.length) lines.push(`No se usan, por ejemplo: ${last.ignored.map(name).join(', ')}.`);
+    return h('p.set-desc.card-note', lines.join(' '));
   }
 
   function folderChips(folders) {

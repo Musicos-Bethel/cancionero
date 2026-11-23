@@ -40,16 +40,30 @@ export const WRITE_TARGET = {
 
 /**
  * Estructura de carpetas de la biblioteca (rutas relativas a la carpeta raíz).
- * Se puede cambiar en Ajustes para adaptarse a la biblioteca de SongBook sin
- * reorganizar nada. Si `voces` está vacío, la carpeta raíz entera es «Voces» y
- * sus subcarpetas son categorías (como las organiza SongBook). En `metales`
- * cada instrumento tiene su subcarpeta (Saxofon, Trompeta); lo que esté fuera
- * de ellas se muestra a los dos.
+ * Se puede cambiar en Ajustes. Si `voces` está vacío, la carpeta raíz entera es
+ * «Voces» y sus subcarpetas son categorías (como las organiza SongBook). En
+ * `metales` cada instrumento tiene su subcarpeta (Saxofon, Trompeta); lo que
+ * esté fuera de ellas se muestra a los dos.
+ *
+ * Por defecto, la biblioteca real de la iglesia (23/11/2026): carpeta
+ * «Cancionero» en la raíz de OneDrive (antes «SongBook»), con las categorías
+ * como subcarpetas (Alabanzas, Himnos…) y la batería en «Partituras batería».
  */
 export const DEFAULT_LAYOUT = {
   root: 'Cancionero',
-  voces: 'Voces',
-  bateria: 'Bateria',
+  voces: '',
+  bateria: 'Partituras batería',
   metales: 'Metales', // dentro: una carpeta por instrumento (Saxofon, Trompeta)
   enlaces: 'Enlaces',
 };
+
+/** Estructura por defecto de versiones anteriores: si un móvil la tiene guardada sin cambios, pasa a la nueva. */
+export const OLD_DEFAULT_LAYOUTS = [{ root: 'Cancionero', voces: 'Voces', bateria: 'Bateria', metales: 'Metales', enlaces: 'Enlaces' }];
+
+/** Estructura de carpetas guardada; si era la de por defecto de una versión anterior (nadie la cambió), la nueva. */
+export function migrateLayout(saved) {
+  if (!saved) return { ...DEFAULT_LAYOUT };
+  const same = (a, b) => Object.keys(b).every((k) => (a[k] ?? '') === b[k]);
+  if (OLD_DEFAULT_LAYOUTS.some((old) => same(saved, old))) return { ...DEFAULT_LAYOUT };
+  return { ...DEFAULT_LAYOUT, ...saved };
+}

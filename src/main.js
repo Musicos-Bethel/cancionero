@@ -21,7 +21,7 @@ import { SongEditorView } from './views/song-editor.js';
 import { DrumEditorView } from './views/drum-editor.js';
 import { flushOutbox } from './lists/outbox-runner.js';
 import { plural } from './ui/format.js';
-import { completeLogin, startLogin, lastAccount } from './sources/onedrive-auth.js';
+import { completeLogin, startLogin, reconnect, lastAccount } from './sources/onedrive-auth.js';
 
 // ---------- Tema
 const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -231,7 +231,7 @@ function report(r) {
     if (state.sync.needsLogin) {
       toast('La sesión de OneDrive ha caducado. Se usa lo ya descargado.', {
         timeout: 8000,
-        action: { label: 'Iniciar sesión', run: async () => startLogin({ loginHint: (await lastAccount())?.user }) },
+        action: { label: 'Iniciar sesión', run: () => reconnect() },
       });
     } else if (state.sync.error) toast(state.sync.error);
     return;
@@ -243,8 +243,17 @@ function report(r) {
   if (parts.length) toast('Biblioteca actualizada: ' + parts.join(', '));
   else if (!r.quiet) toast('La biblioteca ya está al día');
 }
-// El botón de actualizar también informa del resultado.
-appbarSync.onclick = () => runSync().then(report);
+// El botón de actualizar también informa del resultado. Si la sesión de OneDrive
+// caducó y se conoce la cuenta, vuelve a entrar solo (solo al pulsarlo, nunca
+// con una canción abierta).
+appbarSync.onclick = async () => {
+  const r = await runSync();
+  if (!r && state.sync.needsLogin && navigator.onLine && !document.body.classList.contains('song-mode') && (await lastAccount())?.user) {
+    toast('Volviendo a entrar en OneDrive…', { timeout: 0 });
+    return reconnect();
+  }
+  report(r);
+};
 
 // ---------- Service worker (actualizaciones de la app)
 // Una versión nueva se instala sola si no hay una canción abierta ni una lista
@@ -312,6 +321,10 @@ async function start() {
   route();
   registerSW();
   const empty = !state.files.length;
+  if (login?.interactive) {
+    // Microsoft no recordaba la sesión: ahora sí, su página de inicio de sesión.
+    return startLogin(login.interactive);
+  }
   if (login) {
     toast(login.ok ? `Sesión iniciada en OneDrive${login.account?.name ? ` (${login.account.name})` : ''}` : login.message, { timeout: login.ok ? 3500 : 7000 });
     if (login.ok) {

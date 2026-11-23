@@ -20,9 +20,10 @@ export async function pool(items, n, fn) {
  *  - lo que desaparece del origen se borra del dispositivo
  */
 export async function syncFrom(source, { onProgress } = {}) {
-  const remote = (await source.list())
-    .map((r) => ({ ...r, info: classifyPath(r.path, source.layout?.() ?? null) }))
-    .filter((r) => r.info);
+  const listed = (await source.list()).map((r) => ({ ...r, info: classifyPath(r.path, source.layout?.() ?? null) }));
+  const remote = listed.filter((r) => r.info);
+  // Para Ajustes: cuántos archivos hay, cuántos se reconocen y ejemplos de los que no.
+  const ignored = listed.filter((r) => !r.info).map((r) => r.path);
   const local = (await db.getAllFiles()).filter((f) => f.origin === 'remote');
   const localByPath = new Map(local.map((f) => [f.path, f]));
   const remotePaths = new Set(remote.map((r) => r.path));
@@ -54,7 +55,7 @@ export async function syncFrom(source, { onProgress } = {}) {
   if (removed.length) await db.deleteFiles(removed);
   for (const p of staleBlobs) await db.deleteBlob(p);
   if (records.length) await db.putFiles(records);
-  await db.kvSet('lastSync', { at: Date.now(), source: source.id });
+  await db.kvSet('lastSync', { at: Date.now(), source: source.id, total: listed.length, recognized: remote.length, ignored: ignored.slice(0, 8) });
 
   return { added, updated: changed.length - added, removed: removed.filter((p) => !remotePaths.has(p)).length };
 }
