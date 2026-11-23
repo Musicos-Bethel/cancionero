@@ -300,6 +300,10 @@ GitHub Pages. Antes hay que activarlo una sola vez en *Settings → Pages → So
 
 ## Estado y hoja de ruta
 
+**Situación (23/11/2026):** el líder de banda aprobó la demostración el 17/11/2026. La fase actual es
+trasladar el repositorio a una organización de GitHub de la iglesia (ver «Migración a la organización
+de la iglesia»). Después se retomará OneDrive (2b) con la dirección definitiva.
+
 | Entrega | Contenido | Estado |
 |---|---|---|
 | Fase 1 | Lector ChordPro, transposición, listas por evento, sin conexión, demostración | Publicada (PR #1) |
@@ -308,14 +312,85 @@ GitHub Pages. Antes hay que activarlo una sola vez en *Settings → Pages → So
 | — | Zoom/página desplazada, pestañas más sensibles, sección Metales | Publicada (PR #4) |
 | — | Editor de canciones de voces | Publicada (PR #5) |
 | — | Logo de la iglesia | Publicada (PR #6) |
-| 2b | Lectura desde OneDrive | **En pausa:** falta registrar la app en Microsoft Entra (cuenta gratuita de Azure) |
+| — | Demostración aprobada por el líder de banda | 17/11/2026 |
+| Migración | Repositorio a la organización de la iglesia y página de mudanza | **En curso:** el líder de banda tiene el manual; falta que cree la organización |
+| 2b | Lectura desde OneDrive | Después de la migración: falta el registro en Microsoft Entra (lo hace el líder de banda) |
 | 2c | Escritura en OneDrive (listas y canciones creadas) | Después de 2b; falta decidir `appFolder` o `library` |
-| — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Propuesto, sin empezar |
+| — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Propuesto, sin empezar; no depende de OneDrive |
 
 **Pendiente de decidir o confirmar:**
+- El nombre de la organización de GitHub (forma parte de la dirección de la app).
 - La estructura real de carpetas de OneDrive.
 - El PIN real y quién lo tiene.
 - La hora del culto del domingo.
 - Qué saxofón se usa.
 - El orden de las categorías.
-- Quién mantiene la app si la adopta la iglesia.
+- Si se añade una licencia o una nota de titularidad.
+
+## Migración a la organización de la iglesia
+
+El repositorio se **transfiere** (no se copia) de `dnathanospina` a una organización gratuita de GitHub
+de la iglesia. Se conservan el historial, los PR y el despliegue. La app pasará de
+`https://dnathanospina.github.io/cancionero/` a `https://ORG.github.io/cancionero/` (`ORG` = nombre que
+elija el líder de banda).
+
+### Decisiones tomadas
+- **Propietarios (Owners):** el líder de banda y Nathanael, cada uno con su cuenta personal. Nathanael
+  puede salir más adelante (Settings → Organizations → Leave) siempre que quede otro Owner.
+- **Cuenta del líder:** creada con el correo de la banda y usada solo por él (GitHub no permite cuentas
+  compartidas). Ese correo es también el de contacto de la organización. Nunca se escribe en el
+  repositorio.
+- **Nombre del repositorio:** se mantiene `cancionero`, así `BASE = '/cancionero/'` en `vite.config.js`
+  sigue valiendo. Con dominio propio habría que cambiarlo a `/` y añadir `public/CNAME`.
+- **Plan Free:** basta con repositorio público + Pages (Pages en un repositorio privado exige pago).
+- **Azure antes no:** la URI de redirección de Microsoft Entra es la dirección de la app, así que el
+  registro se hace después de la migración.
+- **Manual para el líder:** PDF «Cancionero Bethel – Manual para el líder de banda» (cuenta de GitHub,
+  verificación en dos pasos, organización, invitar a `dnathanospina` como Owner, alta en Azure, registro
+  de la app y conexión con OneDrive). Está en el proyecto de Claude, no en el repositorio.
+
+### Pasos (en orden)
+1. **Líder de banda:** crea su cuenta, activa la verificación en dos pasos, crea la organización
+   `ORG` (tipo empresa o institución, nombre de la iglesia) e invita a `dnathanospina` como **Owner**.
+   Envía el nombre de la organización.
+2. **Nathanael:** acepta la invitación. Comprueba que no hay PR abiertos. Avisa a los músicos
+   (copia de seguridad en *Ajustes → Copia de seguridad → Exportar*).
+3. **Transferir:** *Settings → General → Danger Zone → Transfer ownership* → `ORG`, nombre `cancionero`.
+   GitHub redirige el repositorio, pero **no** la dirección de Pages: la antigua deja de funcionar.
+   No crear otro repositorio `dnathanospina/cancionero` (rompería la redirección del repositorio).
+4. **Publicar:** en `ORG/cancionero`, *Settings → Pages → Source: GitHub Actions*; *Actions → Desplegar
+   en GitHub Pages → Run workflow*. Si falla el despliegue, revisar *Settings → Environments →
+   github-pages*. En la organización, *Settings → Actions* debe permitir las acciones oficiales.
+5. **Proteger `main`:** regla que exija PR y que pase *build*, sin borrado ni *force push*.
+6. **Acceso de Claude:** instalar o ampliar la aplicación de Claude en GitHub a `ORG` con acceso a
+   `cancionero`, y actualizar las instrucciones del proyecto de Claude (dirección y repositorio).
+7. **Encargo 1 (este repositorio, rama `claude/mudanza-org`):** cambiar la dirección en README y
+   CLAUDE.md; sección de titularidad y mantenimiento; comprobar `BASE`; buscar otras referencias a
+   `dnathanospina.github.io`; aviso discreto en el primer arranque sin datos: «¿Usabas el cancionero en
+   la dirección antigua? Restaura tu copia en Ajustes → Copia de seguridad».
+8. **Encargo 2 (página de mudanza):** repositorio `dnathanospina/dnathanospina.github.io` (sitio de
+   usuario) con:
+   - `cancionero/index.html`: «El cancionero se ha mudado», enlace a la dirección nueva, botón «Guardar
+     mi copia de seguridad» que lee la IndexedDB de este origen y genera el mismo JSON que
+     `createBackup()` (`src/features/backup.js`, formato `cancionero-bethel-copia`, versión 1), y
+     redirección automática a los 5 s si no hay datos locales.
+   - `cancionero/sw.js`: service worker de despedida (mismo nombre que el de la app): `skipWaiting`,
+     borra las cachés (no la IndexedDB), se desregistra y recarga las ventanas.
+   - Se publica justo después de transferir y se mantiene al menos seis meses.
+9. **Músicos:** mensaje con la dirección nueva; reinstalar (iPhone: Safari → Compartir → Añadir a
+   pantalla de inicio; Android: Chrome → Instalar app) y *Restaurar* la copia.
+10. **Después:** el líder de banda registra la app en Microsoft Entra (solo cuentas personales de
+    Microsoft, plataforma SPA, URI = dirección nueva con `/` final; permisos delegados `Files.Read`,
+    `Files.ReadWrite.AppFolder`, `offline_access`) y envía el **Id. de aplicación (cliente)**. No es
+    secreto y puede ir en el código. Entonces empieza la fase 2b.
+
+### Datos de cada móvil
+Los datos de la PWA van por origen: en la dirección nueva la app arranca vacía. La copia de seguridad
+recupera ajustes, ajustes por canción y canciones de texto importadas o creadas con el editor. No
+recupera PDF ni imágenes importados, las listas de la «OneDrive simulada» de la demostración ni la
+sesión de modo líder.
+
+### Vuelta atrás
+Un Owner puede devolver el repositorio a `dnathanospina` con *Transfer ownership*. Antes habría que
+retirar la carpeta `cancionero/` del sitio de usuario. Por eso no se registra nada en Azure hasta que la
+dirección nueva lleve unos días funcionando.
