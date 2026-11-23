@@ -1,4 +1,5 @@
 import { h } from '../ui/dom.js';
+import { goBackTo } from '../nav.js';
 import { state } from '../state.js';
 import { link, listCard, emptyState, pageHeader, songRow, displayKey, pendingChip, sectionSwitch } from '../ui/components.js';
 import { todayISO } from '../util/text.js';
@@ -110,12 +111,12 @@ export function ListDetailView({ id }) {
     if (!ok) return;
     await deleteList(list.id);
     toast(navigator.onLine ? 'Lista borrada' : 'Lista borrada en este dispositivo. Se borrará para todos al recuperar la conexión.');
-    location.replace(link('/listas'));
+    goBackTo(link('/listas'));
   };
 
   const el = h(
     'div.view.list-detail',
-    h('a.back-link', { href: link('/listas') }, icon('back', { size: 18 }), 'Listas'),
+    h('a.back-link', { href: link('/listas'), onclick: (e) => (e.preventDefault(), goBackTo(link('/listas'))) }, icon('back', { size: 18 }), 'Listas'),
     statusBanner,
     h(
       'header.page-head',

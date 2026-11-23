@@ -1,7 +1,8 @@
 import { h, clear } from '../ui/dom.js';
+import { goBackTo, replaceTo } from '../nav.js';
 import { icon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
-import { confirmDialog } from '../ui/dialog.js';
+import { confirmDialog, openSheet } from '../ui/dialog.js';
 import { state, emitChange, reloadLibrary } from '../state.js';
 import * as db from '../db.js';
 import { categoriesOf, ALL, NONE } from '../library/library.js';
@@ -10,6 +11,7 @@ import { makeChordTransformer } from '../music/transpose.js';
 import { loadSongDoc, songMeta } from '../chordpro/song-doc.js';
 import { renderSong } from '../viewers/chordpro-view.js';
 import { splitSongFile, buildSongFile, chordProToPlain, plainToBody, emptySong, validateSong } from '../chordpro/compose.js';
+import { songChords, keyChords, validChord, wrapLines, insertLine, highlightTokens, SECTION_NAMES } from '../chordpro/editor-tools.js';
 import { safeName } from '../chordpro/split.js';
 import { normalize } from '../util/text.js';
 import { link, emptyState } from '../ui/components.js';
@@ -23,6 +25,27 @@ const DRAFT_KEY = 'cancion-borrador';
 export const EDITOR_SOURCE = 'editor';
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+const MODE_KEY = 'editor-modo';
+const readMode = () => {
+  try {
+    const m = localStorage.getItem(MODE_KEY);
+    return m === 'plain' || m === 'chordpro' ? m : 'chordpro';
+  } catch {
+    return 'chordpro';
+  }
+};
+
+const CHORDPRO_PLACEHOLDER = `{c: Intro } {soh} 2x {eoh}
+[G]   [C]   [D]
+
+{c: Estrofa}
+[G]Castillo [C]fuerte es [D]nuestro [G]Dios
+
+{c: Coro}
+{soc}
+[C]Escribe el acorde [G]antes de su sílaba
+{eoc}`;
 
 const PLACEHOLDER = `Estrofa 1
 C        G         Am      F
@@ -82,14 +105,15 @@ export function SongEditorView({ id }) {
     // dispositivo no está en esa carpeta.
     const tags = [...fields.tags];
     for (const c of original.categories) if (!tags.some((t) => normalize(t) === normalize(c))) tags.push(c);
-    initial = { ...fields, tags, title: fields.title || original.title, plain: chordProToPlain(fields.body) };
+    initial = { ...fields, tags, title: fields.title || original.title };
   } else {
-    initial = { ...emptySong(), plain: '' };
+    initial = emptySong();
   }
-  delete initial.body;
+  // El texto de la canción se guarda siempre en ChordPro (draft.body): así lo
+  // que se escribe en el modo ChordPro no se toca al guardar.
   let draft = structuredClone(initial);
   const dirty = () => !same(draft, initial);
-  let mode = 'write'; // 'write' | 'preview' | 'chordpro'
+  let mode = readMode(); // 'chordpro' | 'plain' | 'preview'
 
   // ---------- Borrador (por si se cierra la app a mitad)
   let saveTimer;
@@ -112,7 +136,7 @@ export function SongEditorView({ id }) {
   const goBack = async () => {
     if (dirty() && !(await confirmDialog({ title: '¿Descartar los cambios?', text: 'Los cambios de esta canción no se han guardado.', confirm: 'Descartar', danger: true }))) return;
     await dropDraft();
-    location.hash = backHref;
+    goBackTo(backHref);
   };
   const recover = h('div.recover-slot');
   el.append(
@@ -136,7 +160,10 @@ export function SongEditorView({ id }) {
         value: draft[key],
         oninput: (e) => {
           draft[key] = e.target.value;
-          if (key === 'key') keyWarn();
+          if (key === 'key') {
+            keyWarn();
+            renderPalette();
+          }
           persistDraft();
         },
       });
@@ -182,10 +209,14 @@ export function SongEditorView({ id }) {
       h('label.field', h('span', 'Título'), input('title', { type: 'text', placeholder: 'Castillo fuerte es nuestro Dios', autocomplete: 'off', enterkeyhint: 'next', maxlength: '120' })),
       h('label.field', h('span', 'Autor ', h('small', '(opcional)')), input('artist', { type: 'text', autocomplete: 'off', enterkeyhint: 'next', maxlength: '120' })),
       h(
-        'div.field-row.three',
+        'div.field-row.half',
         h('label.field', h('span', 'Tono', keyMsg), input('key', { type: 'text', placeholder: 'G, Em, Re…', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', maxlength: '8' })),
-        h('label.field', h('span', 'Tempo'), input('tempo', { type: 'text', inputmode: 'numeric', placeholder: '72', maxlength: '4' })),
+        h('label.field', h('span', 'Tempo ', h('small', '(bpm)')), input('tempo', { type: 'text', inputmode: 'numeric', placeholder: '72', maxlength: '4' })),
+      ),
+      h(
+        'div.field-row.half',
         h('label.field', h('span', 'Compás'), input('time', { type: 'text', placeholder: '4/4', maxlength: '6' })),
+        h('label.field', h('span', 'Duración'), input('duration', { type: 'text', inputmode: 'decimal', placeholder: '4:30', maxlength: '5' })),
       ),
       h('label.field', h('span', 'Categorías ', h('small', '(separadas por comas)')), tagsInput),
       tagChips,
@@ -198,26 +229,178 @@ export function SongEditorView({ id }) {
   // ---------- Letra y acordes
   const modeSeg = h('div.segmented.small.editor-modes', { role: 'tablist', 'aria-label': 'Vista' });
   const MODES = [
-    ['write', 'Escribir'],
-    ['preview', 'Vista previa'],
     ['chordpro', 'ChordPro'],
+    ['plain', 'Acordes encima'],
+    ['preview', 'Vista previa'],
   ];
   const pane = h('div.editor-pane');
   const help = h('p.set-desc.editor-help');
+  const hl = h('pre.cp-hl', { 'aria-hidden': 'true' });
   const textarea = h('textarea.song-text', {
-    rows: 18,
+    rows: 12,
     spellcheck: 'false',
     autocapitalize: 'sentences',
-    wrap: 'off',
-    oninput: (e) => {
-      if (mode === 'write') draft.plain = e.target.value;
-      else draft.plain = chordProToPlain(e.target.value);
-      persistDraft();
-    },
+    'aria-label': 'Letra y acordes',
+    oninput: sync,
   });
-  const chordproText = () => plainToBody(draft.plain);
+  const editorBox = h('div.cp-editor', hl, textarea);
+
+  function sync() {
+    draft.body = mode === 'chordpro' ? textarea.value : plainToBody(textarea.value);
+    paint();
+    grow();
+    renderPalette();
+    persistDraft();
+  }
+  // Colores (solo en modo ChordPro): una copia coloreada detrás del texto.
+  function paint() {
+    if (mode !== 'chordpro') return;
+    hl.replaceChildren(...highlightTokens(textarea.value).map(([c, t]) => (c ? h(`span.tk-${c}`, t) : t)), '\n');
+  }
+  // El cuadro crece con el texto: así se desplaza la página y no el cuadro.
+  function grow() {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 2 + 'px';
+  }
+  new ResizeObserver(() => mode !== 'preview' && grow()).observe(editorBox);
+
+  /** Sustituye el texto cambiando solo la parte distinta (así «deshacer» funciona). */
+  function applyText(next, start, end) {
+    const old = textarea.value;
+    let p = 0;
+    while (p < old.length && p < next.length && old[p] === next[p]) p++;
+    let q = 0;
+    while (q < old.length - p && q < next.length - p && old[old.length - 1 - q] === next[next.length - 1 - q]) q++;
+    textarea.focus({ preventScroll: true });
+    textarea.setSelectionRange(p, old.length - q);
+    const ins = next.slice(p, next.length - q);
+    let ok = false;
+    try {
+      ok = document.execCommand('insertText', false, ins);
+    } catch {
+      ok = false;
+    }
+    if (!ok || textarea.value !== next) textarea.value = next;
+    textarea.setSelectionRange(start, end);
+    sync();
+  }
+  function insertAtCursor(text, selectFrom = text.length, selectTo = selectFrom) {
+    const { selectionStart: a, selectionEnd: b, value } = textarea;
+    const next = value.slice(0, a) + text + value.slice(b);
+    applyText(next, a + selectFrom, a + selectTo);
+  }
+  const cursor = () => ({ a: textarea.selectionStart, b: textarea.selectionEnd, v: textarea.value });
+
+  // Los botones no quitan el foco al texto (el teclado del móvil no se cierra).
+  const keepFocus = (e) => e.preventDefault();
+  const tool = (label, onclick, title) => h('button.tool-btn', { type: 'button', title: title ?? label, onpointerdown: keepFocus, onclick }, label);
+
+  function addSection() {
+    const { a } = cursor();
+    const pick = (name) => {
+      s.close();
+      const r = insertLine(textarea.value, a, `{c: ${name}}`);
+      applyText(r.text, r.start, r.end);
+    };
+    const other = h('input', { type: 'text', placeholder: 'Otro nombre', maxlength: '40', enterkeyhint: 'done', onkeydown: (e) => e.key === 'Enter' && other.value.trim() && pick(other.value.trim()) });
+    const s = openSheet({
+      title: 'Añadir sección',
+      subtitle: 'Se añade como {c: …} antes de la línea del cursor.',
+      body: [
+        h('div.code-grid', SECTION_NAMES.map((n) => h('button.btn.ghost', { type: 'button', onclick: () => pick(n) }, n))),
+        h('div.code-other', h('label.field', { 'aria-label': 'Otro nombre' }, other), h('button.btn.primary', { type: 'button', onclick: () => other.value.trim() && pick(other.value.trim()) }, 'Añadir')),
+      ],
+    });
+  }
+  function wrap(open, close) {
+    const { a, b } = cursor();
+    const r = wrapLines(textarea.value, a, b, open, close);
+    applyText(r.text, r.start, r.end);
+  }
+  function addRepeat() {
+    const { a, v } = cursor();
+    const pre = a > 0 && !/\s/.test(v[a - 1]) ? ' ' : '';
+    const code = `${pre}{soh}2x{eoh}`;
+    // Queda seleccionado «2x» para cambiarlo por 3x, 4x…
+    insertAtCursor(code, pre.length + 5, pre.length + 7);
+  }
+  function moreCodes() {
+    const { a, b } = cursor();
+    const run = (fn) => {
+      s.close();
+      textarea.setSelectionRange(a, b);
+      fn();
+    };
+    const opt = (label, code, fn) => h('button.code-row', { type: 'button', onclick: () => run(fn) }, h('span', label), h('code', code));
+    const s = openSheet({
+      title: 'Códigos de SongBook',
+      subtitle: 'Los que rodean (estrofa, puente…) se aplican a las líneas seleccionadas.',
+      body: [
+        h(
+          'div.code-list',
+          opt('Comentario', '{c: …}', () => {
+            const r = insertLine(textarea.value, a, '{c: }');
+            applyText(r.text, r.start - 1, r.start - 1);
+          }),
+          opt('Coro', '{soc} … {eoc}', () => wrap('{soc}', '{eoc}')),
+          opt('Estrofa', '{sov} … {eov}', () => wrap('{sov}', '{eov}')),
+          opt('Puente', '{sob} … {eob}', () => wrap('{sob}', '{eob}')),
+          opt('Repeticiones', '{soh}2x{eoh}', addRepeat),
+          opt('Tablatura o ritmo', '{sot} … {eot}', () => wrap('{sot}', '{eot}')),
+          opt('Cuadrícula de acordes', '{sog} … {eog}', () => wrap('{sog}', '{eog}')),
+        ),
+      ],
+    });
+  }
+  function newChord() {
+    const field = h('input', { type: 'text', placeholder: 'F#m7, Bb/D, Sol…', maxlength: '16', autocapitalize: 'off', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done' });
+    const err = h('p.form-msg.error');
+    const { a, b } = cursor();
+    const ok = () => {
+      const c = field.value.trim();
+      if (!validChord(c)) {
+        err.textContent = 'No se reconoce el acorde.';
+        return;
+      }
+      s.close();
+      textarea.setSelectionRange(a, b);
+      insertAtCursor(`[${c}]`);
+    };
+    field.addEventListener('keydown', (e) => e.key === 'Enter' && ok());
+    const s = openSheet({
+      title: 'Otro acorde',
+      subtitle: 'Se pone donde está el cursor y queda en la lista de acordes de la canción.',
+      body: [h('label.field', h('span', 'Acorde'), field), err],
+      footer: [h('button.btn.ghost', { onclick: () => s.close() }, 'Cancelar'), h('button.btn.primary', { onclick: ok }, 'Añadir')],
+    });
+    setTimeout(() => field.focus(), 50);
+  }
+
+  const palette = h('div.chord-palette', { role: 'group', 'aria-label': 'Acordes' });
+  let paletteKey = '';
+  function renderPalette() {
+    const used = songChords(draft.body);
+    const fromKey = keyChords(draft.key, 'american').filter((c) => !used.includes(c));
+    const k = used.join('|') + '#' + fromKey.join('|');
+    if (k === paletteKey) return;
+    paletteKey = k;
+    const chip = (c, cls = '') =>
+      h(`button.chord-chip${cls}`, { type: 'button', onpointerdown: keepFocus, onclick: () => insertAtCursor(`[${c}]`), 'aria-label': `Poner ${c}` }, c);
+    palette.replaceChildren(
+      ...used.map((c) => chip(c)),
+      used.length && fromKey.length ? h('span.chip-sep', { 'aria-hidden': 'true' }) : null,
+      ...fromKey.map((c) => chip(c, '.from-key')),
+      h('button.chord-chip.add', { type: 'button', onclick: newChord }, icon('plus', { size: 16 }), 'Acorde'),
+    );
+  }
+  const toolbar = h(
+    'div.cp-toolbar',
+    h('div.tool-row', tool('Sección', addSection, 'Añadir {c: …}'), tool('Coro', () => wrap('{soc}', '{eoc}'), 'Rodear con {soc} … {eoc}'), tool('2x', addRepeat, 'Repeticiones {soh}2x{eoh}'), tool('Más códigos', moreCodes)),
+    palette,
+  );
+
   function fileText() {
-    return buildSongFile({ ...draft, tags: draft.tags }, chordproText());
+    return buildSongFile(draft, draft.body);
   }
   function renderPane() {
     modeSeg.replaceChildren(
@@ -231,6 +414,13 @@ export function SongEditorView({ id }) {
             class: mode === m ? 'on' : '',
             onclick: () => {
               mode = m;
+              if (m !== 'preview') {
+                try {
+                  localStorage.setItem(MODE_KEY, m);
+                } catch {
+                  /* sin almacenamiento: no pasa nada */
+                }
+              }
               renderPane();
             },
           },
@@ -252,24 +442,33 @@ export function SongEditorView({ id }) {
       );
       return;
     }
-    if (mode === 'write') {
+    editorBox.classList.toggle('plain', mode === 'plain');
+    if (mode === 'plain') {
       help.replaceChildren(
         'Escribe cada línea de acordes encima de su letra, alineados con la sílaba. Los títulos como ',
         h('strong', 'Estrofa 1'),
-        ', ',
-        h('strong', 'Coro'),
         ' o ',
-        h('strong', 'Puente'),
+        h('strong', 'Coro'),
         ' en una línea sola se convierten en secciones.',
       );
-      textarea.value = draft.plain;
+      textarea.wrap = 'off';
+      textarea.value = chordProToPlain(draft.body);
       textarea.placeholder = PLACEHOLDER;
+      hl.replaceChildren();
     } else {
-      help.textContent = 'El mismo texto en formato ChordPro, por si prefieres escribirlo así (como en SongBook).';
-      textarea.value = chordproText();
-      textarea.placeholder = '{c: Estrofa 1}\n[C]Castillo [G]fuerte es [Am]nuestro [F]Dios';
+      help.replaceChildren(
+        'Como en SongBook: el acorde va entre corchetes justo antes de su sílaba, ',
+        h('code', '[G]Castillo'),
+        '. Toca un acorde de la lista para ponerlo donde está el cursor.',
+      );
+      textarea.wrap = 'soft';
+      textarea.value = draft.body;
+      textarea.placeholder = CHORDPRO_PLACEHOLDER;
+      paint();
     }
-    pane.replaceChildren(textarea);
+    renderPalette();
+    pane.replaceChildren(toolbar, editorBox);
+    requestAnimationFrame(grow);
   }
 
   // ---------- Guardar
@@ -319,7 +518,11 @@ export function SongEditorView({ id }) {
       initial = structuredClone(draft);
       await reloadLibrary();
       toast(original ? 'Cambios guardados en este dispositivo' : 'Canción guardada en este dispositivo');
-      location.hash = link(`/cancion/voces/${encodeURIComponent(newId)}`);
+      // Editando: se vuelve a la canción (sin dejar el editor en el historial).
+      // Nueva: el editor se sustituye por la canción.
+      const target = link(`/cancion/voces/${encodeURIComponent(newId)}`);
+      if (original) goBackTo(target, backHref);
+      else replaceTo(target);
     } catch (e) {
       console.error(e);
       toast('No se pudo guardar: ' + (e.message || e));
@@ -348,7 +551,8 @@ export function SongEditorView({ id }) {
     initial = structuredClone(draft);
     await reloadLibrary();
     toast(sharedCopy ? 'Se muestra de nuevo la versión compartida' : 'Canción borrada');
-    location.hash = sharedCopy ? backHref : link('/canciones');
+    if (sharedCopy) goBackTo(backHref);
+    else goBackTo(link('/canciones'), backHref);
   }
 
   el.append(
@@ -379,7 +583,10 @@ export function SongEditorView({ id }) {
         h('span', `Tienes cambios sin guardar de ${timeAgo(saved.at)}.`),
         h('button.btn.small.primary', {
           onclick: () => {
-            draft = saved.draft;
+            draft = { ...emptySong(), ...saved.draft };
+            // Borradores de la versión anterior (texto «acordes encima»)
+            if (saved.draft.plain != null && saved.draft.body == null) draft.body = plainToBody(saved.draft.plain);
+            delete draft.plain;
             renderFields();
             renderPane();
             persistDraft();

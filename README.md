@@ -20,16 +20,20 @@ líder de banda; ambos son propietarios de la organización.
 - **Transponer** ± semitonos y **capo** (muestra las formas que se tocan y el tono que suena), en notación **americana (C D E)** o **latina (Do Re Mi)**. Se recuerda por canción y por lista.
 - **Solo letra** para cantantes, **tamaño de letra**, **modo oscuro**.
 - **PDF e imágenes página a página.** Deslizando a la izquierda pasas a la página siguiente; desde la última, a la siguiente canción de la lista (y al revés). Muestra la página (1/3) y avisa de cuál es la siguiente canción. El pellizco con dos dedos solo hace zoom. También hay vista *Continuo* con desplazamiento automático.
+- **Botón «atrás»:** el de la app y el de Android (o el gesto de iPhone) llevan al mismo sitio. Al guardar o cancelar en un editor se vuelve a la pantalla de antes sin dejar el editor en el historial, así que no hay bucles.
 - **Deslizar entre canciones** de una lista también en las de texto: solo un gesto claramente horizontal, sin estorbar el desplazamiento ni la selección de texto.
 - **Pantalla completa:** oculta las barras y un toque las muestra. En Android usa la pantalla completa del sistema; en iPhone, donde las PWA no pueden, se oculta la interfaz de la app.
 - **Desplazamiento automático** con velocidad ajustable. Un toque en la partitura muestra u oculta los controles.
+  - Si la canción tiene duración (`{time: 6:58}` de SongBook), empieza en **Auto**: la velocidad se calcula para recorrerla entera en ese tiempo. En «Más» se puede volver a Auto.
+  - Cada canción recuerda su velocidad en el dispositivo, y la última elegida es la inicial de las demás (no vuelve a un valor fijo, como hace SongBook en el iPad).
+- **Metrónomo** (botón junto a «Escuchar»): suena al tempo de la canción (`{metronome}` o `{tempo}`; en una partitura PDF, el de su canción de voces) y marca el primer tiempo del compás. Se ajusta con − y + y cada canción recuerda su tempo. Un punto dorado marca el pulso aunque se oculten los controles. Funciona sin conexión; en iPhone no suena con el interruptor de silencio puesto.
 - **Pedal Bluetooth:** AvPág/↓ baja la pantalla (al final pasa a la siguiente canción de la lista), RePág/↑ sube, →/← cambian de canción, Espacio inicia o pausa el desplazamiento. En PDF/imágenes, el pedal pasa página y después canción. Las teclas se pueden cambiar en Ajustes.
 - **Categorías** en Canciones, con su número de canciones (ver más abajo).
 - **Escuchar:** cada canción puede tener su enlace (YouTube se abre en su app si está instalada), y cada lista tiene «Escuchar la lista» para preparar el ensayo.
 - **La pantalla no se apaga** mientras hay una canción abierta.
 - **Copia de seguridad** de los ajustes personales y de los archivos importados.
 - **Modo líder con PIN** para crear, editar, duplicar y borrar las listas desde el móvil (ver más abajo).
-- **Editor de canciones** (modo líder): crear y editar canciones de voces escribiendo los acordes encima de la letra, con vista previa. Se guardan en ChordPro.
+- **Editor de canciones** (modo líder): crear y editar canciones de voces en ChordPro como en SongBook (botones de códigos, acordes de la canción a un toque, colores) o con los acordes encima de la letra, con vista previa.
 - **Editor de hojas de batería** (modo líder): ritmos en cuadrícula que se rellenan tocando las casillas y hoja de ruta por secciones. Se guardan en ChordPro.
 - **Importar canciones a un solo dispositivo** (también exportaciones de SongBook y carpetas en .zip), para probar con canciones reales sin subirlas a ningún sitio.
 - **Actualizaciones automáticas:** una versión nueva se instala sola, salvo si hay una canción abierta o una lista a medio editar; en ese caso espera hasta que se cierre.
@@ -61,6 +65,15 @@ También puede haber una carpeta `Enlaces/` (ver «Enlaces para escuchar»).
 Formatos admitidos: `.cho`, `.pro`, `.chordpro`, `.chopro`, `.crd`, `.txt`, `.pdf`, `.jpg`, `.png`, `.webp`, `.gif`.
 Dentro de `Voces/`, `Bateria/`, `Metales/Saxofon/` y `Metales/Trompeta/` puedes crear subcarpetas (por ejemplo `Himnos/`): cada subcarpeta es una categoría.
 La carpeta de cada instrumento se reconoce aunque se llame «Saxofón», «Sax alto», «Trompetas»…
+
+### Códigos de SongBook
+
+La app lee las canciones de SongBook tal como están, sin tocar los archivos:
+
+- `{c: Coro } {soh} 2x {eoh}`: el texto entre `{soh}` y `{eoh}` sale resaltado («2x»), también dentro de la letra.
+- `{c: Coro }` justo antes de `{soc}` se usa como nombre del coro: «Coro» sale una sola vez.
+- `{metronome: 136}` es el tempo y `{time: 6:58}` la duración (en SongBook, `{time}` con dos puntos no es el compás). `{musicpath}` se ignora.
+- Los acordes no separan la letra: solo se aparta una palabra cuando dos acordes chocarían, y una línea solo de acordes (Intro, Solo) sale en una fila.
 
 ### Categorías
 
@@ -153,11 +166,16 @@ dispositivo hasta que se cierra la app.
 
 - **Crear:** *Canciones → Nueva canción* (solo en modo líder y en la sección Voces).
 - **Editar:** en una canción de texto, menú «Más» → «Editar canción».
-- **Campos:** título, autor, tono, tempo, compás, categorías (con sugerencias de las existentes) y enlace para escuchar.
-- **Tres vistas:**
-  - **Escribir:** como en papel, con los acordes encima de la letra (letra monoespaciada para alinearlos). «Estrofa 1», «Coro», «Puente»… en una línea sola son secciones. También se aceptan `[acordes]` dentro de la letra y directivas `{…}`.
+- **Campos:** título, autor, tono, tempo, compás, duración, categorías (con sugerencias de las existentes) y enlace para escuchar. Se respetan las directivas de SongBook: el autor en `{subtitle}`, el tempo en `{metronome}` y la duración en `{time: 6:58}`.
+- **Tres vistas** (la app recuerda la última de este dispositivo):
+  - **ChordPro** (por defecto), como el editor de SongBook: el acorde va entre corchetes justo antes de su sílaba (`[G]Castillo`). Colores: acordes en dorado, códigos en gris, repeticiones resaltadas. Barra fija encima del texto:
+    - **Sección:** añade `{c: Coro}`, `{c: Intro}`… antes de la línea del cursor.
+    - **Coro:** rodea las líneas seleccionadas con `{soc}` … `{eoc}`.
+    - **2x:** añade `{soh}2x{eoh}` con «2x» seleccionado para cambiarlo.
+    - **Más códigos:** comentario, estrofa, puente, tablatura o ritmo, cuadrícula.
+    - **Acordes:** primero los que ya tiene la canción y después los de la tonalidad; al tocarlos se ponen donde está el cursor. «+ Acorde» para uno nuevo. El teclado del móvil no se cierra y «deshacer» funciona.
+  - **Acordes encima:** como en papel (letra monoespaciada). «Estrofa 1», «Coro», «Puente»… en una línea sola son secciones. También se aceptan `[acordes]` dentro de la letra y directivas `{…}`.
   - **Vista previa:** con el lector real.
-  - **ChordPro:** el mismo texto en el formato de SongBook.
 - **Formato:** se guarda siempre en ChordPro (`.cho`). Las líneas con acordes demasiado juntos para ponerlos encima se dejan en ChordPro para no moverlos de su sílaba.
 - **Dónde se guarda:** de momento **solo en el dispositivo** (hasta la escritura en OneDrive, fase 2c). «Exportar .cho» descarga o comparte el archivo para subirlo a la carpeta del cancionero.
 - **Canciones compartidas:** editar una crea una copia en el dispositivo con el mismo nombre de archivo, que la sustituye allí (las listas y la batería la siguen encontrando). «Volver a la versión compartida» la deshace.
@@ -372,7 +390,8 @@ Scripts opcionales (usan Playwright con Chromium): `node scripts/generate-icons.
 | `src/sync/` | Sincronización incremental y descarga de PDF/imágenes bajo demanda |
 | `src/db.js` | Almacenamiento local (IndexedDB) |
 | `src/viewers/` | Visores de ChordPro, PDF (pdf.js, carga diferida) e imágenes; página a página o continuo |
-| `src/features/` | Desplazamiento automático, pedal, gestos, pantalla completa, escuchar, copias, instalación |
+| `src/nav.js` | Historial: «atrás» de la app y de Android coherentes (`goBackTo`, `replaceTo`) |
+| `src/features/` | Desplazamiento automático, metrónomo, pedal, gestos, pantalla completa, escuchar, copias, instalación |
 | `src/views/` | Pantallas: Inicio, Canciones, Listas, Canción, Ajustes, editor de listas, editor de canciones y editor de batería |
 
 ### Caché y sin conexión
