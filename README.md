@@ -304,80 +304,21 @@ GitHub Pages. En cada PR el mismo flujo solo prueba y compila (comprobación `bu
 
 ## Estado y hoja de ruta
 
-**Situación (23/11/2026):** migración hecha. El repositorio está en `Musicos-Bethel/cancionero` y la app
-se publica en https://musicos-bethel.github.io/cancionero/. A partir de ahora se trabaja solo con este
-repositorio. Antes de cualquier otra tarea, hacer los «Primeros pasos tras la migración» (abajo).
-Después se retomará OneDrive (2b) con la dirección definitiva.
+**Situación (23/11/2026):** migración terminada. El repositorio está en `Musicos-Bethel/cancionero`, la
+app se publica en https://musicos-bethel.github.io/cancionero/ y `main` está protegida. A partir de ahora se
+trabaja solo con este repositorio. Siguiente: editor de batería; OneDrive (2b) cuando el líder de banda
+envíe el Id. de aplicación de Microsoft Entra.
 
-### Primeros pasos tras la migración (en este orden)
+### Primeros pasos tras la migración (hechos)
 
-1. **Proteger `main`** (lo primero; fusionar en `main` publica la app para todos). En
-   `Musicos-Bethel/cancionero` → *Settings → Rules → Rulesets → New ruleset → New branch ruleset*:
-   - *Ruleset name*: `main`. *Enforcement status*: **Active**. Sin lista de *bypass*.
-   - *Target branches → Add target → Include default branch*.
-   - Marcar **Restrict deletions** y **Block force pushes**.
-   - Marcar **Require a pull request before merging** con *Required approvals* = 0 (solo hay un
-     mantenedor; la regla obliga a pasar por PR, no a que lo apruebe otra persona).
-   - Marcar **Require status checks to pass** y añadir la comprobación **`build`** (el trabajo de
-     `.github/workflows/deploy.yml`, que también se ejecuta en cada PR; aparece en la lista en cuanto
-     ha corrido una vez, por ejemplo en el PR #9).
-   - *Create*. Comprobar en *Settings → Rules* que la regla figura como activa.
-2. **Actualizar las instrucciones del proyecto de Claude** (las cambia Nathanael en claude.ai: Proyecto
-   «App.cancionero Iglesia» → instrucciones). Sustituir el texto por este:
-
-   ```text
-   Proyecto: Cancionero Bethel, una app (PWA) tipo SongBook para el equipo de música de la iglesia Bethel. Sirve para leer canciones con acordes, partituras de batería y de metales, y listas por evento, sin licencias externas.
-
-   Dónde está
-   - App publicada: https://musicos-bethel.github.io/cancionero/
-   - Código: github.com/Musicos-Bethel/cancionero (repositorio público de la organización de la iglesia). El repositorio antiguo dnathanospina/cancionero ya no se usa.
-   - Propietarios de la organización: Raúl (líder de banda) y yo, Nathanael (dnathanospina).
-   - Documento del proyecto: claude/cancionero-migrado.md (estado, decisiones y pendientes).
-   - Manual para el líder de banda: PDF «Cancionero Bethel – Manual para el líder de banda», en los archivos del proyecto.
-
-   Al empezar cada sesión
-   1. Lee claude/cancionero-migrado.md.
-   2. En el repositorio, lee README.md (funciones, formatos, hoja de ruta y «Primeros pasos tras la migración») y CLAUDE.md (reglas de desarrollo).
-   3. Si queda algún paso de «Primeros pasos tras la migración» sin hacer (por ejemplo, proteger main), hazlo antes que cualquier otra tarea, o dime qué tengo que hacer yo.
-   4. Dime en una o dos frases qué vas a hacer y empieza.
-
-   Cómo comunicarte conmigo
-   - En español de España, directo y práctico.
-   - No soy programador profesional: explica las decisiones técnicas en pocas palabras y con ejemplos de lo que verá el músico en el móvil.
-   - Pregúntame antes de decisiones que no se puedan deshacer o que afecten a todos (publicar, borrar, cambiar la dirección de la app, cuentas o permisos).
-   - Si algo lo tengo que hacer yo (verificar mi identidad en GitHub, aprobar un permiso, pegar unas instrucciones), dímelo paso a paso, con los nombres exactos de los botones.
-
-   Cómo trabajar en el código
-   - Una rama por tarea (claude/…) y un PR a main con un resumen en español: qué cambia y qué se ha comprobado.
-   - main está protegida: los cambios entran solo por PR y con la comprobación build en verde.
-   - Antes de abrir el PR: npm test y npm run build sin errores, y comprobación en Chrome móvil simulado (412 px): la página no se ensancha y no hay errores en la consola. Si cambia el aspecto, compruébalo también en tamaño tableta y en modo oscuro.
-   - Fusiona los PR solo cuando yo lo pida. Al fusionar, la app se publica para todos los músicos.
-   - Commits con la dirección noreply de GitHub (las indica CLAUDE.md).
-   - Sin dependencias nuevas salvo que haya una buena razón, y explícamela.
-   - Al terminar una tarea, actualiza claude/cancionero-migrado.md (estado, decisiones y pendientes) y el README si cambian funciones o pasos.
-
-   Decisiones fijas
-   - Diseño estilo iOS con cristal (Liquid Glass), sobrio, sin emojis ni rótulos en mayúsculas. Dorado solo como acento. Logo de la iglesia en la cabecera. Debe funcionar igual en iPhone (Safari) y Android (Chrome), móvil y tablet.
-   - Tecnología: JavaScript sin framework, Vite, vite-plugin-pwa, IndexedDB, pdf.js y Vitest; publicación con GitHub Actions en GitHub Pages.
-   - Nunca subir al repositorio canciones reales, correos ni datos de la iglesia. La demostración solo lleva himnos de dominio público y arreglos propios.
-   - Secciones: Voces, Batería y Metales (Saxofón / Trompeta). Los tonos de las listas son de concierto y la app transporta para los metales.
-   - La app tiene que funcionar sin conexión durante el culto: nada que dependa de internet en mitad de una canción, y las actualizaciones no deben interrumpir una canción abierta.
-   - El modo líder (PIN) es un cerrojo contra cambios por error, no seguridad fuerte.
-
-   En pausa (no empezar sin que yo lo diga)
-   - OneDrive (fases 2b lectura y 2c escritura). Antes, Raúl debe registrar la app en Microsoft Entra con la URI de redirección https://musicos-bethel.github.io/cancionero/ y enviarme el Id. de aplicación (cliente); yo te lo confirmaré.
-   - Dominio propio: no se usa. Si algún día se cambia, cambia la dirección de la app y todos tendrían que reinstalarla.
-
-   Pendientes conocidos (detalle en claude/cancionero-migrado.md)
-   - Proteger main y fusionar el PR #9 (mudanza a Musicos-Bethel).
-   - Saber qué saxofón usan (alto en Mi♭ o tenor en Si♭), la hora del culto del domingo, el PIN real y el orden de las categorías.
-   - Decidir si el icono de la app pasa a ser el logo.
-
-   Siguiente paso propuesto: editor de batería (cuadrícula de ritmos y hoja de ruta por secciones), que no depende de OneDrive.
-   ```
-3. **Fusionar el PR #9** (dirección nueva y titularidad en README y CLAUDE.md) cuando Nathanael lo pida.
-   Así se comprueba también que la regla de `main` deja fusionar con la comprobación en verde.
-4. **Reinstalar la app** el líder de banda y Nathanael desde la dirección nueva (borrar antes el icono
+1. **Proteger `main`** (hecho el 23/11/2026): regla `main` en *Settings → Rules → Rulesets*, activa, sobre la
+   rama por defecto, sin lista de *bypass*: sin borrado ni *force push*, cambios solo por PR (0
+   aprobaciones) y comprobación **`build`** obligatoria. La API de las sesiones de Claude no puede crear
+   reglas: si hubiera que cambiarla, se hace desde la web.
+2. **Instrucciones del proyecto de Claude** (hecho el 23/11/2026): actualizadas en claude.ai, proyecto
+   «App.cancionero Iglesia».
+3. **PR #9** (hecho el 23/11/2026): fusionado con la regla ya activa.
+4. **Reinstalar la app:** el líder de banda y Nathanael, desde la dirección nueva (borrar antes el icono
    antiguo) y restaurar su copia si la exportaron.
 
 | Entrega | Contenido | Estado |
@@ -389,8 +330,8 @@ Después se retomará OneDrive (2b) con la dirección definitiva.
 | — | Editor de canciones de voces | Publicada (PR #5) |
 | — | Logo de la iglesia | Publicada (PR #6) |
 | — | Demostración aprobada por el líder de banda | 17/11/2026 |
-| Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio en `Musicos-Bethel`, publicada en la dirección nueva; falta proteger `main` |
-| 2b | Lectura desde OneDrive | Después de la migración: falta el registro en Microsoft Entra (lo hace el líder de banda) |
+| Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio en `Musicos-Bethel`, publicada en la dirección nueva y `main` protegida |
+| 2b | Lectura desde OneDrive | Falta el registro en Microsoft Entra (lo hace el líder de banda) |
 | 2c | Escritura en OneDrive (listas y canciones creadas) | Después de 2b; falta decidir `appFolder` o `library` |
 | — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Propuesto, sin empezar; no depende de OneDrive |
 
@@ -436,11 +377,11 @@ de la iglesia. Se conservan el historial, los PR y el despliegue. La app pasará
 4. **Publicar:** Pages se conservó con la transferencia (*Source: GitHub Actions*) y la app abre en la
    dirección nueva (comprobado el 23/11/2026). Si un despliegue falla, revisar *Settings → Environments →
    github-pages* y, en la organización, *Settings → Actions* (debe permitir las acciones oficiales).
-5. **Proteger `main`:** pendiente; ver «Primeros pasos tras la migración».
+5. **Proteger `main`:** hecho el 23/11/2026 (ver «Primeros pasos tras la migración»).
 6. **Acceso de Claude:** aplicación de Claude en GitHub instalada en `Musicos-Bethel` (23/11/2026). Las
    sesiones nuevas se abren con `Musicos-Bethel/cancionero` como repositorio. Las instrucciones del
-   proyecto se actualizan en «Primeros pasos tras la migración».
-7. **Repositorio (PR #9, rama `claude/mudanza-org`):** dirección nueva y titularidad en README y
+   proyecto ya están actualizadas.
+7. **Repositorio (PR #9, fusionado el 23/11/2026):** dirección nueva y titularidad en README y
    CLAUDE.md; `BASE` sin cambios.
 8. **Sin página de mudanza (decidido el 23/11/2026):** en la dirección antigua solo tenían la app
    instalada el líder de banda y Nathanael, así que no se publica página de mudanza ni aviso de
@@ -460,5 +401,5 @@ recupera PDF ni imágenes importados, las listas de la «OneDrive simulada» de 
 sesión de modo líder.
 
 ### Vuelta atrás
-Un Owner puede devolver el repositorio a `dnathanospina` con *Transfer ownership*. Por eso no se registra nada en Azure hasta que la
-dirección nueva lleve unos días funcionando.
+Un Owner puede devolver el repositorio a `dnathanospina` con *Transfer ownership*. El registro en Microsoft Entra
+va ligado a la dirección nueva: si se volviera atrás, habría que cambiar la URI de redirección.
