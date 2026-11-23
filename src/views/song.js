@@ -1,4 +1,5 @@
 import { h, clear } from '../ui/dom.js';
+import { goBackTo, replaceTo } from '../nav.js';
 import { icon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
 import { openSheet } from '../ui/dialog.js';
@@ -59,7 +60,7 @@ export function SongView({ section, id, query, backHref }) {
   const back = list ? link('/lista/' + encodeURIComponent(list.id)) : backHref || link('/canciones');
   if (!song) {
     return {
-      el: h('div.view', emptyState('Canción no encontrada', item ? `«${item.name}» no está en la biblioteca.` : 'Puede que se haya borrado o renombrado.', h('a.btn.primary', { href: back }, 'Volver'))),
+      el: h('div.view', emptyState('Canción no encontrada', item ? `«${item.name}» no está en la biblioteca.` : 'Puede que se haya borrado o renombrado.', h('a.btn.primary', { href: back, onclick: (e) => (e.preventDefault(), goBackTo(back)) }, 'Volver'))),
     };
   }
 
@@ -74,7 +75,7 @@ export function SongView({ section, id, query, backHref }) {
   };
   const prev = findStep(-1);
   const next = findStep(1);
-  const go = (step, opts) => step && location.replace(songUrl(list, step.index, step.song, opts));
+  const go = (step, opts) => step && replaceTo(songUrl(list, step.index, step.song, opts));
   const edgeLabels = { next: next?.song.title, prev: prev?.song.title };
   /** Cambia de canción por gesto o pedal; devuelve false si no hay más. */
   const advance = (dir) => {
@@ -147,7 +148,7 @@ export function SongView({ section, id, query, backHref }) {
   );
   const topFloat = h(
     'div.float-top',
-    h('div.float-row', h('a.glass-btn.circle', { href: back, 'aria-label': 'Volver' }, icon('back', { size: 22 })), centerCap, h('div.glass-cap', metroBtn, listenBtn, moreBtn)),
+    h('div.float-row', h('a.glass-btn.circle', { href: back, 'aria-label': 'Volver', onclick: (e) => (e.preventDefault(), goBackTo(back)) }, icon('back', { size: 22 })), centerCap, h('div.glass-cap', metroBtn, listenBtn, moreBtn)),
     notes,
   );
 

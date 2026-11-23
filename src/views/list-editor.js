@@ -1,4 +1,5 @@
 import { h, clear } from '../ui/dom.js';
+import { goBackTo, replaceTo } from '../nav.js';
 import { icon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
 import { openSheet, confirmDialog } from '../ui/dialog.js';
@@ -93,7 +94,7 @@ export function ListEditorView({ mode, id, query }) {
   const goBack = async () => {
     if (dirty() && !(await confirmDialog({ title: '¿Descartar los cambios?', text: 'Los cambios de esta lista no se han guardado.', confirm: 'Descartar', danger: true }))) return;
     await dropDraft();
-    location.hash = backHref;
+    goBackTo(backHref);
   };
   const recover = h('div.recover-slot');
   el.append(
@@ -436,7 +437,9 @@ export function ListEditorView({ mode, id, query }) {
       if (!entry) toast('Lista guardada. Aparecerá en todos los móviles al actualizar.');
       else if (entry.status === 'conflict') toast('Lista guardada en este dispositivo, pero hay un conflicto: revísalo en la lista.');
       else toast('Guardada en este dispositivo. Se subirá sola al recuperar la conexión.', { timeout: 6000 });
-      location.replace(link('/lista/' + encodeURIComponent(newId)));
+      const target = link('/lista/' + encodeURIComponent(newId));
+      if (mode === 'edit') goBackTo(target, backHref);
+      else replaceTo(target);
     } catch (e) {
       console.error(e);
       toast('No se pudo guardar: ' + (e.message || e));
