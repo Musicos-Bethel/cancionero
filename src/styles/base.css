@@ -712,3 +712,10 @@ details.review ul { margin: 8px 0 0; padding-left: 20px; color: var(--text-2); f
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 .tab:active { opacity: 0.65; }
+
+/* Ajustes: notas dentro de una tarjeta y carpetas de OneDrive */
+.card-note { padding: 0 16px 12px; margin: 0; }
+.set-desc.card-note { padding-top: 2px; }
+.error-text { color: var(--danger); }
+.folder-picker { margin: -2px 0 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.folder-picker .tag-suggest { margin: 0; padding: 0; }

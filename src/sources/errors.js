@@ -25,3 +25,21 @@ export class OfflineError extends Error {
     this.name = 'OfflineError';
   }
 }
+
+/** Hace falta iniciar sesión en OneDrive (no hay sesión o ha caducado). */
+export class LoginRequiredError extends Error {
+  constructor(message = 'Hay que iniciar sesión en OneDrive.') {
+    super(message);
+    this.name = 'LoginRequiredError';
+  }
+}
+
+/** La carpeta del cancionero no existe en OneDrive. `folders`: carpetas que sí hay. */
+export class FolderNotFoundError extends Error {
+  constructor(folder, folders = []) {
+    super(`No se encuentra la carpeta «${folder}» en OneDrive. Elige la carpeta del cancionero en Ajustes.`);
+    this.name = 'FolderNotFoundError';
+    this.folder = folder;
+    this.folders = folders;
+  }
+}

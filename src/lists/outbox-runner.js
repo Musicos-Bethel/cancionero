@@ -2,7 +2,7 @@ import * as db from '../db.js';
 import { state, reloadLibrary, currentSource, runSync, emitChange } from '../state.js';
 import { serializeList, parseList } from './format.js';
 import { uniqueListPath } from './files.js';
-import { ConflictError, OfflineError } from '../sources/errors.js';
+import { ConflictError, OfflineError, LoginRequiredError } from '../sources/errors.js';
 import { WRITE_TARGET } from '../config.js';
 import { splitPath } from '../util/text.js';
 
@@ -104,7 +104,8 @@ async function doFlush() {
       await db.outboxDelete(e.key);
       uploaded++;
     } catch (err) {
-      if (err instanceof OfflineError) break;
+      // Sin conexión o sin sesión de OneDrive: queda pendiente para más tarde.
+      if (err instanceof OfflineError || err instanceof LoginRequiredError) break;
       if (err instanceof ConflictError) {
         const remotePath = err.reason === 'exists' ? e.path : e.origPath;
         let remote = null;

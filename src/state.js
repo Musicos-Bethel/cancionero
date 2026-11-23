@@ -2,6 +2,8 @@ import * as db from './db.js';
 import { buildLibrary } from './library/library.js';
 import { syncFrom, prefetch } from './sync/sync.js';
 import { demoSource } from './sources/demo.js';
+import { createOneDriveSource } from './sources/onedrive.js';
+import { LoginRequiredError, FolderNotFoundError } from './sources/errors.js';
 import { upcomingLists, resolveItem, SECTIONS } from './library/library.js';
 import { songMeta } from './chordpro/song-doc.js';
 import { applyOutbox } from './lists/outbox.js';
@@ -33,7 +35,10 @@ export const DEFAULT_SETTINGS = {
   source: 'demo',
 };
 
-const SOURCES = { demo: demoSource };
+const SOURCES = {
+  demo: demoSource,
+  onedrive: createOneDriveSource({ getLayout: () => state.settings.layout }),
+};
 
 const emptyLib = buildLibrary([]);
 
@@ -42,7 +47,7 @@ export const state = {
   library: emptyLib,
   files: [],
   outbox: [],
-  sync: { running: false, progress: null, last: null, error: null },
+  sync: { running: false, progress: null, last: null, error: null, needsLogin: false, folders: null },
   online: typeof navigator !== 'undefined' ? navigator.onLine : true,
   installPrompt: null,
 };
@@ -108,7 +113,7 @@ export async function runSync({ quiet = false } = {}) {
     emit('sync');
     return null;
   }
-  state.sync = { ...state.sync, running: true, progress: null, error: null };
+  state.sync = { ...state.sync, running: true, progress: null, error: null, needsLogin: false, folders: null };
   emit('sync');
   try {
     const source = currentSource();
@@ -124,8 +129,16 @@ export async function runSync({ quiet = false } = {}) {
     state.sync.last = await db.kvGet('lastSync', null);
     return { ...result, quiet };
   } catch (e) {
-    console.error(e);
-    state.sync.error = 'No se pudo actualizar: ' + (e.message || e);
+    if (e instanceof LoginRequiredError) {
+      state.sync.needsLogin = true;
+      state.sync.error = `${e.message} Para actualizar, vuelve a iniciar sesión; mientras tanto se usa lo ya descargado.`;
+    } else if (e instanceof FolderNotFoundError) {
+      state.sync.folders = e.folders;
+      state.sync.error = e.message;
+    } else {
+      console.error(e);
+      state.sync.error = 'No se pudo actualizar: ' + (e.message || e);
+    }
     return null;
   } finally {
     state.sync.running = false;

@@ -12,6 +12,7 @@ import { upcomingLists } from '../library/library.js';
 import { currentSource, reloadLibrary, emitChange } from '../state.js';
 import * as db from '../db.js';
 import { WRITE_TARGET } from '../config.js';
+import { startLogin, signOut, sessionInfo, lastAccount } from '../sources/onedrive-auth.js';
 import { glassReason } from '../features/glass.js';
 import { linkReport, SECTION_LABEL, SECTION_SHORT, SECTIONS, isMetal } from '../library/library.js';
 import { pageHeader, link } from '../ui/components.js';
@@ -45,6 +46,112 @@ const card = (title, ...children) => h('section.set-card', h('h2.group-title', t
 export function SettingsView() {
   const el = h('div.view.settings');
   const cleanups = [];
+
+  async function syncAndReport() {
+    const r = await runSync();
+    if (r) toast(r.added || r.updated || r.removed ? 'Biblioteca actualizada' : 'La biblioteca ya está al día');
+    else if (state.sync.error) toast(state.sync.error, { timeout: 6000 });
+  }
+
+  async function switchSource(v) {
+    if (v === state.settings.source) return;
+    const toOneDrive = v === 'onedrive';
+    const ok = await confirmDialog({
+      title: toOneDrive ? '¿Usar la biblioteca de OneDrive?' : '¿Volver a la demostración?',
+      text: toOneDrive
+        ? 'Se cargan las canciones y listas de la iglesia desde OneDrive. Hay que iniciar sesión con la cuenta de Microsoft compartida del equipo. Lo de la demostración deja de verse en este dispositivo.'
+        : 'Se deja de ver la biblioteca de OneDrive en este dispositivo y se carga la demostración. Puedes volver cuando quieras.',
+      confirm: toOneDrive ? 'Usar OneDrive' : 'Volver a la demostración',
+    });
+    if (!ok) return;
+    // Los cambios pendientes y el modo líder eran del otro origen.
+    for (const e of await db.outboxAll()) await db.outboxDelete(e.key);
+    exitLeader();
+    const remote = state.files.filter((f) => f.origin === 'remote').map((f) => f.path);
+    if (remote.length) await db.deleteFiles(remote);
+    await setSettings({ source: v });
+    await reloadLibrary();
+    emitChange('outbox');
+    if (toOneDrive && !(await sessionInfo())) return startLogin({ returnHash: '#/ajustes', loginHint: (await lastAccount())?.user });
+    syncAndReport();
+  }
+
+  /** Tarjeta de la sesión de OneDrive. */
+  function oneDriveCard() {
+    const status = h('div.set-desc', 'Comprobando…');
+    const actions = h('div.set-actions');
+    const body = row('Sesión', null, actions);
+    body.querySelector('.set-text').append(status);
+    sessionInfo().then(async (info) => {
+      const acc = info?.account ?? (await lastAccount());
+      if (info) {
+        const ends = new Date(info.endsAt);
+        status.textContent = `${acc?.name || acc?.user || 'Sesión iniciada'}${acc?.name && acc?.user ? ` (${acc.user})` : ''}. Hasta las ${ends.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}${ends.toDateString() !== new Date().toDateString() ? ' de mañana' : ''}.`;
+        actions.replaceChildren(
+          h('button.btn.small.ghost', {
+            onclick: async () => {
+              if (!(await confirmDialog({ title: '¿Cerrar la sesión de OneDrive?', text: 'Lo descargado se queda en el dispositivo y se puede seguir usando sin conexión. Para actualizar habrá que volver a iniciar sesión.', confirm: 'Cerrar sesión' }))) return;
+              await signOut();
+              render();
+            },
+          }, 'Cerrar sesión'),
+        );
+      } else {
+        status.textContent = acc ? 'La sesión ha caducado. Lo descargado se sigue pudiendo usar; para actualizar, vuelve a iniciar sesión.' : 'Sin iniciar sesión.';
+        actions.replaceChildren(
+          h('button.btn.small.primary', { onclick: () => startLogin({ returnHash: '#/ajustes', loginHint: acc?.user }) }, 'Iniciar sesión con Microsoft'),
+        );
+      }
+    });
+    return card(
+      'OneDrive',
+      body,
+      h(
+        'p.set-desc.card-note',
+        'Inicia sesión con la cuenta de Microsoft compartida del equipo. Microsoft limita la sesión a 24 horas: después, la app sigue funcionando con lo descargado y solo pide iniciar sesión otra vez para actualizar.',
+      ),
+      state.sync.error ? h('p.set-desc.card-note.error-text', state.sync.error) : null,
+      state.sync.folders?.length ? folderChips(state.sync.folders) : null,
+    );
+  }
+
+  function folderChips(folders) {
+    return h(
+      'div.tag-suggest.card-note',
+      folders.map((f) =>
+        h('button.cat-chip', {
+          type: 'button',
+          onclick: async () => {
+            await setSettings({ layout: { ...state.settings.layout, root: f } });
+            syncAndReport();
+          },
+        }, f),
+      ),
+    );
+  }
+
+  /** Botón para ver las carpetas de OneDrive y elegir la del cancionero. */
+  function folderPicker() {
+    const slot = h('div.folder-picker');
+    slot.append(
+      h('button.btn.small.ghost', {
+        type: 'button',
+        onclick: async () => {
+          slot.replaceChildren(h('p.set-desc', 'Buscando carpetas…'));
+          try {
+            const folders = await currentSource().rootFolders();
+            slot.replaceChildren(
+              h('p.set-desc', folders.length ? 'Toca la carpeta del cancionero:' : 'No hay carpetas en OneDrive.'),
+              folderChips(folders.sort((a, b) => a.localeCompare(b, 'es'))),
+            );
+          } catch (e) {
+            slot.replaceChildren(h('p.set-desc.error-text', e.name === 'LoginRequiredError' ? 'Primero inicia sesión en OneDrive.' : `No se pudieron leer las carpetas: ${e.message}`));
+          }
+        },
+      }, icon('cloud', { size: 16 }), 'Ver carpetas de OneDrive'),
+    );
+    return slot;
+  }
 
   function render() {
     const s = state.settings;
@@ -155,8 +262,8 @@ export function SettingsView() {
         'Biblioteca',
         row(
           'Origen',
-          'De momento, biblioteca de demostración. OneDrive se conectará cuando se apruebe el registro en Microsoft.',
-          segmented('Origen', s.source, [['demo', 'Demostración'], ['onedrive', 'OneDrive']], (v) => (v === 'onedrive' ? toast('OneDrive estará disponible en la próxima versión.') : setSettings({ source: v }))),
+          s.source === 'onedrive' ? 'Las canciones y listas de la iglesia, en OneDrive.' : 'Biblioteca de demostración con himnos de dominio público.',
+          segmented('Origen', s.source, [['demo', 'Demostración'], ['onedrive', 'OneDrive']], switchSource),
         ),
         row(
           'Última actualización',
@@ -173,6 +280,8 @@ export function SettingsView() {
         row('Espacio en el dispositivo', null, storage),
       ),
     );
+
+    if (s.source === 'onedrive') el.append(oneDriveCard());
 
     if (s.source === 'demo') {
       const upcoming = upcomingLists(state.library);
@@ -230,14 +339,18 @@ export function SettingsView() {
           autocomplete: 'off',
           autocapitalize: 'off',
           spellcheck: 'false',
-          onchange: (e) => setSettings({ layout: { ...state.settings.layout, [key]: e.target.value.trim().replace(/^\/+|\/+$/g, '') } }),
+          onchange: async (e) => {
+            await setSettings({ layout: { ...state.settings.layout, [key]: e.target.value.trim().replace(/^\/+|\/+$/g, '') } });
+            if (state.settings.source === 'onedrive') syncAndReport();
+          },
         }),
       );
     el.append(
       card(
         'Carpetas en OneDrive',
-        h('p.set-desc', 'Para adaptarse a la biblioteca que ya tenéis (SongBook) sin reorganizar nada. Se aplicará al conectar OneDrive; en la demostración no cambia nada.'),
+        h('p.set-desc', 'Para adaptarse a la biblioteca que ya tenéis (SongBook) sin reorganizar nada. Las carpetas de dentro se escriben relativas a la carpeta del cancionero. En la demostración no cambia nada.'),
         layoutField('root', 'Carpeta del cancionero', 'Por ejemplo: SongBook'),
+        s.source === 'onedrive' ? folderPicker() : null,
         layoutField('voces', 'Canciones de voces e instrumentos', 'Vacío = toda la carpeta (las subcarpetas son categorías)'),
         layoutField('bateria', 'Partituras de batería', 'Por ejemplo: Partituras batería'),
         layoutField('metales', 'Partituras de metales', 'Dentro, una carpeta por instrumento: Saxofon y Trompeta'),

@@ -21,6 +21,7 @@ import { SongEditorView } from './views/song-editor.js';
 import { DrumEditorView } from './views/drum-editor.js';
 import { flushOutbox } from './lists/outbox-runner.js';
 import { plural } from './ui/format.js';
+import { completeLogin, startLogin, lastAccount } from './sources/onedrive-auth.js';
 
 // ---------- Tema
 const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -37,7 +38,8 @@ matchMedia('(prefers-reduced-transparency: reduce)').addEventListener?.('change'
 
 // ---------- Estructura
 const app = document.getElementById('app');
-const appbarSync = h('button.glass-btn.circle.sync-btn', { 'aria-label': 'Actualizar biblioteca', onclick: () => runSync() }, icon('refresh', { size: 20 }));
+// El clic se asigna más abajo (appbarSync.onclick), para informar del resultado.
+const appbarSync = h('button.glass-btn.circle.sync-btn', { 'aria-label': 'Actualizar biblioteca' }, icon('refresh', { size: 20 }));
 const offlineBadge = h('span.offline-badge', { hidden: true, title: 'Sin conexión' }, icon('wifiOff', { size: 16 }), h('span', 'Sin conexión'));
 // Título pequeño que aparece en la barra al desplazar (como en iOS).
 const compactTitle = h('div.appbar-title', { 'aria-hidden': 'true' });
@@ -226,7 +228,12 @@ window.addEventListener('offline', () => setOnline(false));
 
 function report(r) {
   if (!r) {
-    if (state.sync.error) toast(state.sync.error);
+    if (state.sync.needsLogin) {
+      toast('La sesión de OneDrive ha caducado. Se usa lo ya descargado.', {
+        timeout: 8000,
+        action: { label: 'Iniciar sesión', run: async () => startLogin({ loginHint: (await lastAccount())?.user }) },
+      });
+    } else if (state.sync.error) toast(state.sync.error);
     return;
   }
   const parts = [];
@@ -295,6 +302,8 @@ async function registerSW() {
 async function start() {
   setupInstall();
   await loadSettings();
+  // ¿Volvemos de la página de Microsoft? Termina el inicio de sesión y limpia la dirección.
+  const login = await completeLogin().catch((e) => ({ ok: false, message: e.message }));
   applyTheme();
   renderChrome();
   await reloadLibrary();
@@ -303,6 +312,13 @@ async function start() {
   route();
   registerSW();
   const empty = !state.files.length;
+  if (login) {
+    toast(login.ok ? `Sesión iniciada en OneDrive${login.account?.name ? ` (${login.account.name})` : ''}` : login.message, { timeout: login.ok ? 3500 : 7000 });
+    if (login.ok) {
+      runSync().then(report).then(() => flushOutbox());
+      return;
+    }
+  }
   if (navigator.onLine) {
     runSync({ quiet: !empty })
       .then((r) => (empty ? null : report(r)))
