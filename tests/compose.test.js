@@ -9,14 +9,14 @@ test('separa campos y cuerpo', () => {
   const s = splitSongFile('{title: Sublime gracia}\n{artist: John Newton}\n{key: G}\n{tag: Himnos}\n{tag: Adoración, Lentas}\n{x_youtube: https://youtu.be/abc}\n\n{c: Estrofa 1}\nSu[G]blime');
   assert.deepEqual(
     { ...s },
-    { title: 'Sublime gracia', artist: 'John Newton', key: 'G', tempo: '', time: '', tags: ['Himnos', 'Adoración', 'Lentas'], link: 'https://youtu.be/abc', body: '{c: Estrofa 1}\nSu[G]blime' },
+    { title: 'Sublime gracia', artist: 'John Newton', artistTag: 'artist', key: 'G', tempo: '', tempoTag: 'metronome', time: '', duration: '', tags: ['Himnos', 'Adoración', 'Lentas'], link: 'https://youtu.be/abc', body: '{c: Estrofa 1}\nSu[G]blime' },
   );
 });
 
 test('arma el archivo y lo lee igual', () => {
   const song = { title: 'Nueva {canción}', artist: '', key: 'D', tempo: '80', time: '4/4', tags: ['Alabanzas'], link: 'https://youtu.be/x', body: '' };
   const text = buildSongFile(song, '{c: Coro}\n[D]Santo');
-  assert.equal(text, '{title: Nueva canción}\n{key: D}\n{tempo: 80}\n{time: 4/4}\n{tag: Alabanzas}\n{x_youtube: https://youtu.be/x}\n\n{c: Coro}\n[D]Santo\n');
+  assert.equal(text, '{title: Nueva canción}\n{key: D}\n{metronome: 80}\n{time: 4/4}\n{tag: Alabanzas}\n{x_youtube: https://youtu.be/x}\n\n{c: Coro}\n[D]Santo\n');
   const meta = songMeta(text, 'cho');
   assert.equal(meta.key, 'D');
   assert.deepEqual(meta.tags, ['Alabanzas']);
@@ -51,4 +51,25 @@ test('valida', () => {
   assert.equal(validateSong({ title: ' ', link: '' }), 'Falta el título.');
   assert.equal(validateSong({ title: 'X', link: 'youtu.be/x' }), 'El enlace debe empezar por https://');
   assert.equal(validateSong({ title: 'X', link: '' }), null);
+});
+
+test('SongBook: {metronome} es el tempo y {time: m:ss} la duración', () => {
+  const s = splitSongFile('{title: X}\n{subtitle: Autor}\n{musicpath:/storage/x.mp3}\n{time:6:58}\n{metronome:136}\n\n[A]Hola');
+  assert.equal(s.tempo, '136');
+  assert.equal(s.artist, 'Autor');
+  assert.equal(s.tempoTag, 'metronome');
+  assert.equal(s.time, '');
+  assert.equal(s.duration, '6:58');
+  assert.match(s.body, /musicpath/); // lo que el formulario no entiende se queda
+  const text = buildSongFile(s, s.body);
+  assert.match(text, /\{subtitle: Autor\}\n\{metronome: 136\}\n\{time: 6:58\}/);
+  const meta = parseChordPro(text).meta;
+  assert.equal(meta.tempo, '136');
+  assert.equal(meta.duration, '6:58');
+  // Si el archivo usaba {tempo}, se respeta
+  const t = splitSongFile('{tempo: 72}\n{time: 3/4}');
+  assert.equal(t.tempoTag, 'tempo');
+  assert.equal(t.time, '3/4');
+  assert.match(buildSongFile(t, ''), /\{tempo: 72\}\n\{time: 3\/4\}/);
+  assert.equal(validateSong({ title: 'X', link: '', time: '5:28' }), 'El compás se escribe como 4/4 (4:30 iría en Duración).');
 });

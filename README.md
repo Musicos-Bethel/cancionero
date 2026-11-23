@@ -29,7 +29,7 @@ líder de banda; ambos son propietarios de la organización.
 - **La pantalla no se apaga** mientras hay una canción abierta.
 - **Copia de seguridad** de los ajustes personales y de los archivos importados.
 - **Modo líder con PIN** para crear, editar, duplicar y borrar las listas desde el móvil (ver más abajo).
-- **Editor de canciones** (modo líder): crear y editar canciones de voces escribiendo los acordes encima de la letra, con vista previa. Se guardan en ChordPro.
+- **Editor de canciones** (modo líder): crear y editar canciones de voces en ChordPro como en SongBook (botones de códigos, acordes de la canción a un toque, colores) o con los acordes encima de la letra, con vista previa.
 - **Editor de hojas de batería** (modo líder): ritmos en cuadrícula que se rellenan tocando las casillas y hoja de ruta por secciones. Se guardan en ChordPro.
 - **Importar canciones a un solo dispositivo** (también exportaciones de SongBook y carpetas en .zip), para probar con canciones reales sin subirlas a ningún sitio.
 - **Actualizaciones automáticas:** una versión nueva se instala sola, salvo si hay una canción abierta o una lista a medio editar; en ese caso espera hasta que se cierre.
@@ -162,11 +162,16 @@ dispositivo hasta que se cierra la app.
 
 - **Crear:** *Canciones → Nueva canción* (solo en modo líder y en la sección Voces).
 - **Editar:** en una canción de texto, menú «Más» → «Editar canción».
-- **Campos:** título, autor, tono, tempo, compás, categorías (con sugerencias de las existentes) y enlace para escuchar.
-- **Tres vistas:**
-  - **Escribir:** como en papel, con los acordes encima de la letra (letra monoespaciada para alinearlos). «Estrofa 1», «Coro», «Puente»… en una línea sola son secciones. También se aceptan `[acordes]` dentro de la letra y directivas `{…}`.
+- **Campos:** título, autor, tono, tempo, compás, duración, categorías (con sugerencias de las existentes) y enlace para escuchar. Se respetan las directivas de SongBook: el autor en `{subtitle}`, el tempo en `{metronome}` y la duración en `{time: 6:58}`.
+- **Tres vistas** (la app recuerda la última de este dispositivo):
+  - **ChordPro** (por defecto), como el editor de SongBook: el acorde va entre corchetes justo antes de su sílaba (`[G]Castillo`). Colores: acordes en dorado, códigos en gris, repeticiones resaltadas. Barra fija encima del texto:
+    - **Sección:** añade `{c: Coro}`, `{c: Intro}`… antes de la línea del cursor.
+    - **Coro:** rodea las líneas seleccionadas con `{soc}` … `{eoc}`.
+    - **2x:** añade `{soh}2x{eoh}` con «2x» seleccionado para cambiarlo.
+    - **Más códigos:** comentario, estrofa, puente, tablatura o ritmo, cuadrícula.
+    - **Acordes:** primero los que ya tiene la canción y después los de la tonalidad; al tocarlos se ponen donde está el cursor. «+ Acorde» para uno nuevo. El teclado del móvil no se cierra y «deshacer» funciona.
+  - **Acordes encima:** como en papel (letra monoespaciada). «Estrofa 1», «Coro», «Puente»… en una línea sola son secciones. También se aceptan `[acordes]` dentro de la letra y directivas `{…}`.
   - **Vista previa:** con el lector real.
-  - **ChordPro:** el mismo texto en el formato de SongBook.
 - **Formato:** se guarda siempre en ChordPro (`.cho`). Las líneas con acordes demasiado juntos para ponerlos encima se dejan en ChordPro para no moverlos de su sílaba.
 - **Dónde se guarda:** de momento **solo en el dispositivo** (hasta la escritura en OneDrive, fase 2c). «Exportar .cho» descarga o comparte el archivo para subirlo a la carpeta del cancionero.
 - **Canciones compartidas:** editar una crea una copia en el dispositivo con el mismo nombre de archivo, que la sustituye allí (las listas y la batería la siguen encontrando). «Volver a la versión compartida» la deshace.

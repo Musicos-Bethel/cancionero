@@ -256,6 +256,133 @@ body.sheet-open { overflow: hidden; }
   tab-size: 8;
 }
 .song-text:focus { outline: none; box-shadow: 0 0 0 2px var(--gold); }
+
+/* Editor de ChordPro (como SongBook): el texto real es transparente y detrás
+   hay una copia coloreada con la misma letra, tamaño y saltos de línea. */
+.field-row.half { grid-template-columns: 1fr 1fr; }
+.editor-modes { overflow-x: auto; max-width: 100%; }
+.editor-help code { font: 0.95em var(--font-mono); color: var(--chord); }
+.cp-editor { position: relative; border-radius: var(--radius); background: var(--card); }
+.cp-editor:focus-within { box-shadow: 0 0 0 2px var(--gold); }
+.cp-editor .song-text,
+.cp-hl {
+  margin: 0;
+  padding: 14px 16px;
+  font: 17px/1.5 var(--font);
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 4;
+}
+.cp-editor .song-text {
+  position: relative;
+  z-index: 1;
+  min-height: 46vh;
+  overflow: hidden;
+  resize: none;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--text);
+}
+.cp-editor .song-text:focus { box-shadow: none; }
+.cp-editor .song-text::placeholder { color: var(--text-3); -webkit-text-fill-color: var(--text-3); }
+.cp-hl { position: absolute; inset: 0; color: var(--text); pointer-events: none; overflow: hidden; }
+.cp-hl .tk-dir { color: color-mix(in srgb, var(--text-2) 70%, transparent); }
+.cp-hl .tk-label { color: var(--text-2); }
+.cp-hl .tk-chord { color: var(--chord); }
+.cp-hl .tk-hl { color: var(--gold-ink); background: color-mix(in srgb, var(--gold) 22%, transparent); border-radius: 4px; }
+/* «Acordes encima»: monoespaciada y sin cortar líneas, como en papel. */
+.cp-editor.plain .cp-hl { display: none; }
+.cp-editor.plain .song-text {
+  font: 16px/1.45 var(--font-mono);
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+}
+
+.cp-toolbar {
+  position: sticky;
+  top: max(8px, var(--safe-top));
+  z-index: 5;
+  margin: 0 0 8px;
+  padding: 6px;
+  border-radius: 20px;
+  background: var(--glass-solid);
+  box-shadow: var(--glass-shadow);
+}
+.glass .cp-toolbar {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(22px) saturate(190%);
+  backdrop-filter: blur(22px) saturate(190%);
+  border: 0.5px solid var(--glass-border);
+}
+.tool-row { display: flex; gap: 6px; }
+.tool-btn {
+  flex: 1 1 auto;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--fill);
+  color: var(--text);
+  font: 500 15px var(--font);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tool-btn:active { background: var(--fill-2); }
+.chord-palette {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.chord-palette::-webkit-scrollbar { display: none; }
+.chord-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 38px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--card);
+  color: var(--chord);
+  font: 600 16px var(--font);
+  cursor: pointer;
+}
+.chord-chip.from-key { color: var(--text-2); font-weight: 500; }
+.chord-chip.add { color: var(--text-2); font-weight: 500; }
+.chord-chip:active { background: var(--fill-2); }
+.chip-sep { flex: none; width: 1px; margin: 8px 2px; background: var(--sep); }
+
+.code-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
+.code-other { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
+.code-other .field { margin: 0; min-width: 0; }
+.code-list { display: flex; flex-direction: column; }
+.code-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 0.5px solid var(--sep-soft);
+  background: none;
+  color: var(--text);
+  font: 17px var(--font);
+  text-align: left;
+  cursor: pointer;
+}
+.code-row:last-child { border-bottom: 0; }
+.code-row code { font: 14px var(--font-mono); color: var(--text-2); white-space: nowrap; }
 .song-preview {
   background: var(--paper);
   border-radius: var(--radius);
