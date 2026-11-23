@@ -25,6 +25,8 @@ export const DEFAULT_SETTINGS = {
   theme: 'auto',
   fontScale: 1,
   lyricsOnly: false,
+  /** Velocidad del desplazamiento para canciones sin velocidad propia (la última elegida en este dispositivo). */
+  scrollSpeed: 4,
   pedal: DEFAULT_PEDAL,
   autoAdvance: true,
   downloadAll: false,

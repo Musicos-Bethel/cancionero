@@ -388,3 +388,33 @@ button.cap-value:disabled { cursor: default; }
 }
 /* En el visor por páginas el indicador ya avisa de la siguiente canción. */
 .song-screen.paged-mode .next-pill { display: none; }
+
+/* Metrónomo */
+.metro-btn.on { color: var(--accent-ink); background: color-mix(in srgb, var(--gold) 22%, transparent); border-radius: 50%; }
+.metro-cap { display: none; height: 44px; border-radius: 22px; align-items: center; padding-left: 14px; }
+.song-screen.metro-on .metro-cap { display: inline-flex; }
+.bpm-value { min-width: 72px; text-align: center; }
+.beat-dot,
+.metro-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-3);
+  opacity: 0.35;
+  transition: transform 0.12s ease-out, opacity 0.12s ease-out;
+}
+.beat-dot { flex: none; margin-right: 4px; }
+.beat-dot.on, .metro-pulse.on { opacity: 1; background: var(--gold); transform: scale(1.25); }
+.beat-dot.accent, .metro-pulse.accent { transform: scale(1.6); }
+.metro-pulse {
+  position: absolute;
+  top: calc(var(--safe-top) + 14px);
+  right: max(16px, var(--safe-right));
+  z-index: 6;
+  display: none;
+  pointer-events: none;
+}
+.song-screen.metro-on.chrome-hidden .metro-pulse { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .beat-dot, .metro-pulse { transition: none; }
+}
