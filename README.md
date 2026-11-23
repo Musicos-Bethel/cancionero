@@ -224,7 +224,9 @@ cancionero con un toque; si la carpeta no existe, la app lo dice y propone las q
 de OneDrive (antes «SongBook»), voces vacío (las subcarpetas Alabanzas, Himnos, Navidad, No Usadas… son
 categorías y las canciones sueltas van a «Sin categoría») y batería en `Partituras batería`. En los
 móviles que ya tenían carpetas guardadas se revisa campo a campo: el que siga con el valor por defecto
-anterior (`Voces`, `Bateria`) pasa al nuevo, y el que alguien cambió a mano se respeta. Los archivos de acordes de SongBook (`Guitar.chords.txt`)
+anterior (`Voces`, `Bateria`) pasa al nuevo, y el que alguien cambió a mano se respeta. Al cambiar las carpetas, lo
+ya descargado se vuelve a clasificar (por ejemplo, «Partituras batería» pasa de categoría de voces a la
+sección Batería) sin descargarlo otra vez. Los archivos de acordes de SongBook (`Guitar.chords.txt`)
 y las listas de SongBook (`.lst`) no se muestran como canciones.
 
 En *Ajustes → OneDrive* se ve cuántos archivos hay y cuántos usa la app, con ejemplos de los que no usa:
