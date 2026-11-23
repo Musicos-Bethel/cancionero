@@ -6,8 +6,7 @@ El README describe todas las funciones, los formatos y la hoja de ruta: léelo a
 
 Repositorio: `Musicos-Bethel/cancionero` (organización de la iglesia; antes `dnathanospina/cancionero`).
 App publicada: https://musicos-bethel.github.io/cancionero/
-Al empezar una sesión, mira en el README «Primeros pasos tras la migración»: si queda alguno sin hacer
-(proteger `main`, instrucciones del proyecto), va antes que cualquier otra tarea.
+`main` está protegida: los cambios entran solo por PR y con la comprobación `build` en verde.
 
 ## Reglas
 - **Idioma:** todo en español de España (interfaz, comentarios, commits, PR). Interfaz sobria, sin emojis
