@@ -4,7 +4,11 @@ Cancionero digital (PWA) para el equipo de música: acordes en formato ChordPro,
 partituras de batería y de metales (texto, PDF o imágenes) y listas por evento compartidas.
 Se instala como una app en iPhone, iPad y Android y funciona sin conexión.
 
-**App:** https://dnathanospina.github.io/cancionero/
+**App:** https://musicos-bethel.github.io/cancionero/
+
+**Titularidad:** la app y este repositorio pertenecen a la iglesia, en la organización de GitHub
+[Musicos-Bethel](https://github.com/Musicos-Bethel). La mantiene Nathanael (`dnathanospina`) junto con el
+líder de banda; ambos son propietarios de la organización.
 
 ## Qué hace
 
@@ -313,13 +317,12 @@ de la iglesia»). Después se retomará OneDrive (2b) con la dirección definiti
 | — | Editor de canciones de voces | Publicada (PR #5) |
 | — | Logo de la iglesia | Publicada (PR #6) |
 | — | Demostración aprobada por el líder de banda | 17/11/2026 |
-| Migración | Repositorio a la organización de la iglesia y página de mudanza | **En curso:** el líder de banda tiene el manual; falta que cree la organización |
+| Migración | Repositorio a la organización de la iglesia y página de mudanza | **En curso (23/11/2026):** organización `Musicos-Bethel` creada; transferencia y publicación en la dirección nueva |
 | 2b | Lectura desde OneDrive | Después de la migración: falta el registro en Microsoft Entra (lo hace el líder de banda) |
 | 2c | Escritura en OneDrive (listas y canciones creadas) | Después de 2b; falta decidir `appFolder` o `library` |
 | — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Propuesto, sin empezar; no depende de OneDrive |
 
 **Pendiente de decidir o confirmar:**
-- El nombre de la organización de GitHub (forma parte de la dirección de la app).
 - La estructura real de carpetas de OneDrive.
 - El PIN real y quién lo tiene.
 - La hora del culto del domingo.
@@ -331,8 +334,8 @@ de la iglesia»). Después se retomará OneDrive (2b) con la dirección definiti
 
 El repositorio se **transfiere** (no se copia) de `dnathanospina` a una organización gratuita de GitHub
 de la iglesia. Se conservan el historial, los PR y el despliegue. La app pasará de
-`https://dnathanospina.github.io/cancionero/` a `https://ORG.github.io/cancionero/` (`ORG` = nombre que
-elija el líder de banda).
+`https://dnathanospina.github.io/cancionero/` a `https://musicos-bethel.github.io/cancionero/` (organización
+`Musicos-Bethel`, creada por el líder de banda el 23/11/2026).
 
 ### Decisiones tomadas
 - **Propietarios (Owners):** el líder de banda y Nathanael, cada uno con su cuenta personal. Nathanael
@@ -351,18 +354,18 @@ elija el líder de banda).
 
 ### Pasos (en orden)
 1. **Líder de banda:** crea su cuenta, activa la verificación en dos pasos, crea la organización
-   `ORG` (tipo empresa o institución, nombre de la iglesia) e invita a `dnathanospina` como **Owner**.
+   `Musicos-Bethel` (tipo empresa o institución, nombre de la iglesia) e invita a `dnathanospina` como **Owner**.
    Envía el nombre de la organización.
 2. **Nathanael:** acepta la invitación. Comprueba que no hay PR abiertos. Avisa a los músicos
    (copia de seguridad en *Ajustes → Copia de seguridad → Exportar*).
-3. **Transferir:** *Settings → General → Danger Zone → Transfer ownership* → `ORG`, nombre `cancionero`.
+3. **Transferir:** *Settings → General → Danger Zone → Transfer ownership* → `Musicos-Bethel`, nombre `cancionero`.
    GitHub redirige el repositorio, pero **no** la dirección de Pages: la antigua deja de funcionar.
    No crear otro repositorio `dnathanospina/cancionero` (rompería la redirección del repositorio).
-4. **Publicar:** en `ORG/cancionero`, *Settings → Pages → Source: GitHub Actions*; *Actions → Desplegar
+4. **Publicar:** en `Musicos-Bethel/cancionero`, *Settings → Pages → Source: GitHub Actions*; *Actions → Desplegar
    en GitHub Pages → Run workflow*. Si falla el despliegue, revisar *Settings → Environments →
    github-pages*. En la organización, *Settings → Actions* debe permitir las acciones oficiales.
 5. **Proteger `main`:** regla que exija PR y que pase *build*, sin borrado ni *force push*.
-6. **Acceso de Claude:** instalar o ampliar la aplicación de Claude en GitHub a `ORG` con acceso a
+6. **Acceso de Claude:** instalar o ampliar la aplicación de Claude en GitHub a `Musicos-Bethel` con acceso a
    `cancionero`, y actualizar las instrucciones del proyecto de Claude (dirección y repositorio).
 7. **Encargo 1 (este repositorio, rama `claude/mudanza-org`):** cambiar la dirección en README y
    CLAUDE.md; sección de titularidad y mantenimiento; comprobar `BASE`; buscar otras referencias a

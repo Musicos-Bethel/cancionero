@@ -20,6 +20,7 @@ import { ListEditorView } from './views/list-editor.js';
 import { SongEditorView } from './views/song-editor.js';
 import { flushOutbox } from './lists/outbox-runner.js';
 import { plural } from './ui/format.js';
+import * as db from './db.js';
 
 // ---------- Tema
 const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -288,9 +289,28 @@ async function registerSW() {
   });
 }
 
+// ---------- Aviso de mudanza
+// La app cambió de dirección al pasar a la organización de la iglesia y los
+// datos de cada móvil no viajan con ella. En un dispositivo sin datos se
+// recuerda una sola vez que se puede restaurar la copia de la dirección antigua.
+async function isFreshDevice() {
+  if (import.meta.env.DEV) return false;
+  if ((await db.kvGet('settings')) !== undefined || (await db.kvGet('avisoMudanza'))) return false;
+  return true;
+}
+
+function showMoveNotice() {
+  db.kvSet('avisoMudanza', true);
+  toast('¿Usabas el cancionero en la dirección antigua? Restaura tu copia en Ajustes → Copia de seguridad.', {
+    timeout: 12000,
+    action: { label: 'Ajustes', run: () => (location.hash = link('/ajustes')) },
+  });
+}
+
 // ---------- Arranque
 async function start() {
   setupInstall();
+  const fresh = await isFreshDevice();
   await loadSettings();
   applyTheme();
   renderChrome();
@@ -299,6 +319,7 @@ async function start() {
   offlineBadge.hidden = navigator.onLine;
   route();
   registerSW();
+  if (fresh) showMoveNotice();
   const empty = !state.files.length;
   if (navigator.onLine) {
     runSync({ quiet: !empty })
