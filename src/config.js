@@ -34,6 +34,10 @@ export const ONEDRIVE = {
 
 export const WRITE_TARGET = {
   location: 'appFolder',
+  // Borrar canciones de la carpeta del cancionero desde el modo líder (decidido
+  // por Nathanael el 23/11/2026). Necesita el permiso Files.ReadWrite en vez de
+  // Files.ReadWrite.AppFolder. Lo borrado va a la papelera de OneDrive.
+  songs: true,
   listsFolder: 'Listas',
   leaderFile: 'ajustes-lider.json',
 };
