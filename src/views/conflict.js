@@ -1,4 +1,5 @@
 import { h } from '../ui/dom.js';
+import { replaceTo } from '../nav.js';
 import { toast } from '../ui/toast.js';
 import { openSheet } from '../ui/dialog.js';
 import { state } from '../state.js';
@@ -76,7 +77,7 @@ export function conflictSheet(entry) {
       toast(choice === 'theirs' ? 'Te has quedado con su versión' : choice === 'copy' ? 'Tu versión se ha guardado como copia' : isDelete ? 'Lista borrada' : 'Se ha guardado tu versión');
       const gone = (choice === 'mine' && isDelete) || (choice === 'theirs' && c.text == null);
       const target = gone || !path ? '/listas' : '/lista/' + encodeURIComponent(path);
-      location.replace(link(target));
+      replaceTo(link(target));
     },
   });
   s.el.classList.add('choices');

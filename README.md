@@ -20,6 +20,7 @@ líder de banda; ambos son propietarios de la organización.
 - **Transponer** ± semitonos y **capo** (muestra las formas que se tocan y el tono que suena), en notación **americana (C D E)** o **latina (Do Re Mi)**. Se recuerda por canción y por lista.
 - **Solo letra** para cantantes, **tamaño de letra**, **modo oscuro**.
 - **PDF e imágenes página a página.** Deslizando a la izquierda pasas a la página siguiente; desde la última, a la siguiente canción de la lista (y al revés). Muestra la página (1/3) y avisa de cuál es la siguiente canción. El pellizco con dos dedos solo hace zoom. También hay vista *Continuo* con desplazamiento automático.
+- **Botón «atrás»:** el de la app y el de Android (o el gesto de iPhone) llevan al mismo sitio. Al guardar o cancelar en un editor se vuelve a la pantalla de antes sin dejar el editor en el historial, así que no hay bucles.
 - **Deslizar entre canciones** de una lista también en las de texto: solo un gesto claramente horizontal, sin estorbar el desplazamiento ni la selección de texto.
 - **Pantalla completa:** oculta las barras y un toque las muestra. En Android usa la pantalla completa del sistema; en iPhone, donde las PWA no pueden, se oculta la interfaz de la app.
 - **Desplazamiento automático** con velocidad ajustable. Un toque en la partitura muestra u oculta los controles.
@@ -379,6 +380,7 @@ Scripts opcionales (usan Playwright con Chromium): `node scripts/generate-icons.
 | `src/sync/` | Sincronización incremental y descarga de PDF/imágenes bajo demanda |
 | `src/db.js` | Almacenamiento local (IndexedDB) |
 | `src/viewers/` | Visores de ChordPro, PDF (pdf.js, carga diferida) e imágenes; página a página o continuo |
+| `src/nav.js` | Historial: «atrás» de la app y de Android coherentes (`goBackTo`, `replaceTo`) |
 | `src/features/` | Desplazamiento automático, metrónomo, pedal, gestos, pantalla completa, escuchar, copias, instalación |
 | `src/views/` | Pantallas: Inicio, Canciones, Listas, Canción, Ajustes, editor de listas, editor de canciones y editor de batería |
 

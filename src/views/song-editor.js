@@ -1,4 +1,5 @@
 import { h, clear } from '../ui/dom.js';
+import { goBackTo, replaceTo } from '../nav.js';
 import { icon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
 import { confirmDialog, openSheet } from '../ui/dialog.js';
@@ -135,7 +136,7 @@ export function SongEditorView({ id }) {
   const goBack = async () => {
     if (dirty() && !(await confirmDialog({ title: '¿Descartar los cambios?', text: 'Los cambios de esta canción no se han guardado.', confirm: 'Descartar', danger: true }))) return;
     await dropDraft();
-    location.hash = backHref;
+    goBackTo(backHref);
   };
   const recover = h('div.recover-slot');
   el.append(
@@ -517,7 +518,11 @@ export function SongEditorView({ id }) {
       initial = structuredClone(draft);
       await reloadLibrary();
       toast(original ? 'Cambios guardados en este dispositivo' : 'Canción guardada en este dispositivo');
-      location.hash = link(`/cancion/voces/${encodeURIComponent(newId)}`);
+      // Editando: se vuelve a la canción (sin dejar el editor en el historial).
+      // Nueva: el editor se sustituye por la canción.
+      const target = link(`/cancion/voces/${encodeURIComponent(newId)}`);
+      if (original) goBackTo(target, backHref);
+      else replaceTo(target);
     } catch (e) {
       console.error(e);
       toast('No se pudo guardar: ' + (e.message || e));
@@ -546,7 +551,8 @@ export function SongEditorView({ id }) {
     initial = structuredClone(draft);
     await reloadLibrary();
     toast(sharedCopy ? 'Se muestra de nuevo la versión compartida' : 'Canción borrada');
-    location.hash = sharedCopy ? backHref : link('/canciones');
+    if (sharedCopy) goBackTo(backHref);
+    else goBackTo(link('/canciones'), backHref);
   }
 
   el.append(

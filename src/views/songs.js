@@ -40,7 +40,7 @@ export function SongsView({ query }) {
     if (q) params.set('q', q);
     if (category !== ALL) params.set('cat', category);
     const qs = params.toString();
-    history.replaceState(null, '', link('/canciones' + (qs ? '?' + qs : '')));
+    history.replaceState(history.state, '', link('/canciones' + (qs ? '?' + qs : '')));
   }
 
   function renderChips() {

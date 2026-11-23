@@ -1,4 +1,5 @@
 import '@fontsource/cabin/latin-600.css'; // solo para la marca «Bethel»
+import { trackRoute } from './nav.js';
 import './styles/base.css';
 import './styles/song.css';
 import './styles/editor.css';
@@ -134,6 +135,7 @@ function parseHash() {
 const isEditor = (view) => view?.el.classList.contains('list-editor') || view?.el.classList.contains('song-editor') || view?.el.classList.contains('drum-editor');
 
 function route() {
+  trackRoute();
   const { path, query, raw } = parseHash();
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
   const songMode = parts[0] === 'cancion';
@@ -161,8 +163,12 @@ function route() {
   else if (parts[0] === 'ajustes') view = SettingsView();
   else view = HomeView();
 
-  if (!songMode) {
+  // Los editores no cuentan como «de dónde vengo»: al salir de una canción tras
+  // editarla se vuelve a la lista o a Canciones, no otra vez al editor.
+  if (!songMode && parts[0] !== 'editor' && !['nueva', 'editar', 'duplicar'].includes(parts[1])) {
     lastListHref = '#' + raw;
+  }
+  if (!songMode) {
     exitImmersive(); // la pantalla completa solo se mantiene entre canciones
   }
   current = view;
