@@ -101,6 +101,10 @@ test('carpetas por defecto: pasa a la nueva si nadie las cambió', async () => {
   assert.deepEqual(migrateLayout({ root: 'Cancionero', voces: 'Voces', bateria: 'Bateria', metales: 'Metales', enlaces: 'Enlaces' }), DEFAULT_LAYOUT);
   const mine = { root: 'Cancionero', voces: '', bateria: 'Batería', metales: 'Metales', enlaces: 'Enlaces' };
   assert.deepEqual(migrateLayout(mine), mine);
+  // Cambió a mano solo voces: la batería sigue con el valor antiguo y pasa al nuevo.
+  assert.deepEqual(migrateLayout({ root: 'Cancionero', voces: '', bateria: 'Bateria', metales: 'Metales', enlaces: 'Enlaces' }), DEFAULT_LAYOUT);
+  assert.equal(migrateLayout({ root: 'SongBook', voces: 'Voces', bateria: 'Bateria' }).root, 'SongBook');
+  assert.equal(migrateLayout({ root: 'SongBook', voces: 'Voces', bateria: 'Bateria' }).voces, '');
   assert.equal(DEFAULT_LAYOUT.voces, '');
   assert.equal(DEFAULT_LAYOUT.bateria, 'Partituras batería');
 });

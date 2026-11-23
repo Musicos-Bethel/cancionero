@@ -60,10 +60,17 @@ export const DEFAULT_LAYOUT = {
 /** Estructura por defecto de versiones anteriores: si un móvil la tiene guardada sin cambios, pasa a la nueva. */
 export const OLD_DEFAULT_LAYOUTS = [{ root: 'Cancionero', voces: 'Voces', bateria: 'Bateria', metales: 'Metales', enlaces: 'Enlaces' }];
 
-/** Estructura de carpetas guardada; si era la de por defecto de una versión anterior (nadie la cambió), la nueva. */
+/**
+ * Estructura de carpetas guardada, revisada campo a campo: un campo que siga
+ * con el valor por defecto de una versión anterior pasa al nuevo; uno que
+ * alguien cambió a mano se respeta.
+ */
 export function migrateLayout(saved) {
   if (!saved) return { ...DEFAULT_LAYOUT };
-  const same = (a, b) => Object.keys(b).every((k) => (a[k] ?? '') === b[k]);
-  if (OLD_DEFAULT_LAYOUTS.some((old) => same(saved, old))) return { ...DEFAULT_LAYOUT };
-  return { ...DEFAULT_LAYOUT, ...saved };
+  const out = { ...DEFAULT_LAYOUT };
+  for (const [k, v] of Object.entries(saved)) {
+    const wasDefault = OLD_DEFAULT_LAYOUTS.some((old) => k in old && (v ?? '') === old[k]);
+    if (!wasDefault) out[k] = v;
+  }
+  return out;
 }

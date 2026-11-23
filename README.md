@@ -222,9 +222,9 @@ cancionero con un toque; si la carpeta no existe, la app lo dice y propone las q
 
 **Por defecto** está puesta la biblioteca real de la iglesia (23/11/2026): carpeta `Cancionero` en la raíz
 de OneDrive (antes «SongBook»), voces vacío (las subcarpetas Alabanzas, Himnos, Navidad, No Usadas… son
-categorías y las canciones sueltas van a «Sin categoría») y batería en `Partituras batería`. Los móviles
-que tenían guardada la estructura por defecto anterior (`Voces`, `Bateria`) pasan a la nueva solos; si
-alguien la había cambiado a mano, se respeta. Los archivos de acordes de SongBook (`Guitar.chords.txt`)
+categorías y las canciones sueltas van a «Sin categoría») y batería en `Partituras batería`. En los
+móviles que ya tenían carpetas guardadas se revisa campo a campo: el que siga con el valor por defecto
+anterior (`Voces`, `Bateria`) pasa al nuevo, y el que alguien cambió a mano se respeta. Los archivos de acordes de SongBook (`Guitar.chords.txt`)
 y las listas de SongBook (`.lst`) no se muestran como canciones.
 
 En *Ajustes → OneDrive* se ve cuántos archivos hay y cuántos usa la app, con ejemplos de los que no usa:
