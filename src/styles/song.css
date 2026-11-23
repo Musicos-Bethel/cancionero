@@ -191,36 +191,65 @@ button.cap-value:disabled { cursor: default; }
 .line { margin: 0; overflow-wrap: anywhere; }
 .line + .line.has-chords { margin-top: 0.14em; }
 .gap { height: 0.75em; }
+/* Letra con acordes encima. El acorde no ocupa ancho propio: sobresale sobre
+   la letra siguiente y layoutChords solo abre hueco si choca con el de al lado. */
 .has-chords .w { display: inline-flex; align-items: flex-end; vertical-align: bottom; }
-.has-chords .c { display: inline-flex; flex-direction: column; }
-.has-chords .c::before,
-.has-chords .ch { font-weight: 600; font-size: 0.9em; line-height: 1.18; min-height: 1.18em; }
-.has-chords .c:not(.has-chord)::before { content: '\200b'; }
-.ch { color: var(--chord); padding-right: 0.35em; white-space: pre; }
+.has-chords .c { display: inline-block; position: relative; padding-top: 1.07em; }
+.has-chords .c > .ch { position: absolute; top: 0; left: var(--pl, 0px); }
+/* Fila (al partirse la línea) sin ningún acorde: sin hueco encima. */
+.has-chords .c.no-chord-row { padding-top: 0; }
+.ch { color: var(--chord); font-weight: 600; font-size: 0.9em; line-height: 1.18; white-space: pre; }
 .ch.annotation { color: var(--text-2); font-style: italic; font-weight: 400; }
 .ly { white-space: pre; }
-.chords-only .ch { padding-right: 0.9em; }
-.chords-only .ly { display: none; }
-.has-chords .c.join .ly { display: flex; }
-.has-chords .c.join .ly::after {
+/* Acorde sin letra debajo (al final de la línea o seguido de otro): sí ocupa su sitio. */
+.has-chords .c.bare { padding-top: 0; }
+.has-chords .c.bare > .ch { position: static; display: block; padding-right: 0.35em; }
+.has-chords .c.bare > .ly { display: block; height: 1.32em; }
+/* Sílaba empujada a mitad de palabra: rayita en el hueco (ho — ra). */
+.has-chords .c.pushed::before {
   content: '';
-  flex: 1 1 0;
-  min-width: 0;
-  height: 0.07em;
-  min-height: 1px;
-  align-self: center;
-  margin-top: 0.15em;
+  position: absolute;
+  left: 0.12em;
+  right: calc(100% - var(--pl, 0px));
+  bottom: 0.42em;
+  height: 1px;
   background: currentColor;
   opacity: 0.3;
-  transform: scaleX(0.6);
+}
+/* Intros, solos…: una fila de acordes. */
+.chord-row { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.55em; row-gap: 0.1em; }
+.chord-row .sp { width: 0; }
+.chord-row .sp.wide { width: 0.6em; }
+.chord-row .ch { padding: 0; }
+/* {soh}2x{eoh}: marcador de repeticiones. */
+.hl {
+  display: inline-block;
+  font-size: 0.82em;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 0 0.45em;
+  border-radius: 0.5em;
+  color: var(--gold-ink);
+  background: rgba(221, 166, 13, 0.16);
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+  vertical-align: 0.05em;
+}
+.hl-text .ly {
+  color: var(--gold-ink);
+  font-weight: 600;
+  font-size: 0.82em;
+  padding: 0 0.45em;
+  border-radius: 0.5em;
+  background: rgba(221, 166, 13, 0.16);
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
 }
 .lyrics-only .ch,
-.lyrics-only .has-chords .c::before,
-.lyrics-only .chords-only { display: none; }
+.lyrics-only .chord-row { display: none; }
 .lyrics-only .w,
-.lyrics-only .c,
-.lyrics-only .has-chords .c.join .ly { display: inline; }
-.lyrics-only .c.join .ly::after { display: none; }
+.lyrics-only .c { display: inline; padding: 0 !important; }
+.lyrics-only .c.bare,
+.lyrics-only .has-chords .c > .ch { display: none; }
+.lyrics-only .c.pushed::before { display: none; }
 .lyrics-only .line + .line.has-chords { margin-top: 0; }
 .lyrics-only .song-body { line-height: 1.45; }
 

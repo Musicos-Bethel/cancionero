@@ -62,6 +62,15 @@ Formatos admitidos: `.cho`, `.pro`, `.chordpro`, `.chopro`, `.crd`, `.txt`, `.pd
 Dentro de `Voces/`, `Bateria/`, `Metales/Saxofon/` y `Metales/Trompeta/` puedes crear subcarpetas (por ejemplo `Himnos/`): cada subcarpeta es una categoría.
 La carpeta de cada instrumento se reconoce aunque se llame «Saxofón», «Sax alto», «Trompetas»…
 
+### Códigos de SongBook
+
+La app lee las canciones de SongBook tal como están, sin tocar los archivos:
+
+- `{c: Coro } {soh} 2x {eoh}`: el texto entre `{soh}` y `{eoh}` sale resaltado («2x»), también dentro de la letra.
+- `{c: Coro }` justo antes de `{soc}` se usa como nombre del coro: «Coro» sale una sola vez.
+- `{metronome: 136}` es el tempo y `{time: 6:58}` la duración (en SongBook, `{time}` con dos puntos no es el compás). `{musicpath}` se ignora.
+- Los acordes no separan la letra: solo se aparta una palabra cuando dos acordes chocarían, y una línea solo de acordes (Intro, Solo) sale en una fila.
+
 ### Categorías
 
 No están fijas en el código: se generan a partir de los archivos.
