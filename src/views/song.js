@@ -450,7 +450,7 @@ export function SongView({ section, id, query, backHref }) {
     try {
       await deleteSong(song);
       toast('Canción eliminada de OneDrive');
-      location.hash = back;
+      goBackTo(back); // la canción borrada no queda en el historial
     } catch (e) {
       if (e instanceof OfflineError) toast('Sin conexión: no se ha eliminado.');
       else if (e instanceof ConflictError) toast('Alguien ha cambiado esta canción en OneDrive. Actualiza la biblioteca y vuelve a intentarlo.', { timeout: 6000 });
