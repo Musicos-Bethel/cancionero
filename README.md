@@ -220,6 +220,18 @@ carpeta cuenta como voces y sus subcarpetas son categorías, como las organiza S
 reorganizar la biblioteca. «Ver carpetas de OneDrive» enseña las carpetas de la raíz para elegir la del
 cancionero con un toque; si la carpeta no existe, la app lo dice y propone las que hay.
 
+**Por defecto** está puesta la biblioteca real de la iglesia (23/11/2026): carpeta `Cancionero` en la raíz
+de OneDrive (antes «SongBook»), voces vacío (las subcarpetas Alabanzas, Himnos, Navidad, No Usadas… son
+categorías y las canciones sueltas van a «Sin categoría») y batería en `Partituras batería`. En los
+móviles que ya tenían carpetas guardadas se revisa campo a campo: el que siga con el valor por defecto
+anterior (`Voces`, `Bateria`) pasa al nuevo, y el que alguien cambió a mano se respeta. Al cambiar las carpetas, lo
+ya descargado se vuelve a clasificar (por ejemplo, «Partituras batería» pasa de categoría de voces a la
+sección Batería) sin descargarlo otra vez. Los archivos de acordes de SongBook (`Guitar.chords.txt`)
+y las listas de SongBook (`.lst`) no se muestran como canciones.
+
+En *Ajustes → OneDrive* se ve cuántos archivos hay y cuántos usa la app, con ejemplos de los que no usa:
+si no usa ninguno, las carpetas no encajan.
+
 ## Conexión con OneDrive
 
 *Ajustes → Biblioteca → Origen → OneDrive*. La app pide iniciar sesión con la cuenta de Microsoft
@@ -235,8 +247,11 @@ biblioteca. Después funciona sin conexión con lo descargado, como con la demos
   `src/sources/onedrive-auth.js`). Al volver, la app termina el proceso y limpia la dirección.
 - **La sesión dura 24 horas.** Es un límite de Microsoft para las apps web y no se puede alargar. Pasado
   ese tiempo la app sigue funcionando con todo lo descargado; al actualizar avisa («La sesión de OneDrive
-  ha caducado») con un botón para volver a entrar. Si Microsoft recuerda la cuenta en el navegador, es un
-  toque. Nunca se pide en mitad de una canción: solo al pulsar «Iniciar sesión».
+  ha caducado») con un botón para volver a entrar. Al pulsar el botón de actualizar con la sesión
+  caducada, la app vuelve a entrar sola: primero lo intenta sin enseñar nada (`prompt=none`) y, si
+  Microsoft recuerda la cuenta, vuelve al instante; si no, abre la página de Microsoft con la cuenta ya
+  puesta. Nunca con una canción abierta. Si Microsoft pide la verificación en dos pasos, conviene marcar
+  «No volver a preguntar en este dispositivo» y «Mantener la sesión iniciada».
 - **Lectura** (`src/sources/onedrive.js`, Microsoft Graph): recorre la carpeta del cancionero y sus
   subcarpetas, descarga los textos que cambian (por eTag) y los PDF e imágenes de las próximas listas. Los
   archivos se descargan de la dirección temporal que da OneDrive, sin enviar el token.
@@ -365,8 +380,8 @@ GitHub Pages. En cada PR el mismo flujo solo prueba y compila (comprobación `bu
 
 **Situación (23/11/2026):** migración terminada. El repositorio está en `Musicos-Bethel/cancionero`, la
 app se publica en https://musicos-bethel.github.io/cancionero/ y `main` está protegida. A partir de ahora se
-trabaja solo con este repositorio. Siguiente: editor de batería; OneDrive (2b) cuando el líder de banda
-envíe el Id. de aplicación de Microsoft Entra.
+trabaja solo con este repositorio. Publicados el editor de batería (PR #11) y la lectura de OneDrive
+(PR #12). Siguiente: probar OneDrive con la biblioteca real y leer las listas de SongBook (`.lst`).
 
 ### Primeros pasos tras la migración (hechos)
 
@@ -390,9 +405,9 @@ envíe el Id. de aplicación de Microsoft Entra.
 | — | Logo de la iglesia | Publicada (PR #6) |
 | — | Demostración aprobada por el líder de banda | 17/11/2026 |
 | Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio en `Musicos-Bethel`, publicada en la dirección nueva y `main` protegida |
-| 2b | Lectura desde OneDrive | Falta el registro en Microsoft Entra (lo hace el líder de banda) |
-| 2c | Escritura en OneDrive (listas y canciones creadas) | Después de 2b; falta decidir `appFolder` o `library` |
-| — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | En revisión (PR #11) |
+| 2b | Lectura desde OneDrive; listas y PIN en la carpeta de la app | Publicada (PR #12); en pruebas con la biblioteca real |
+| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Pendiente; las listas ya se escriben (`appFolder`) |
+| — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Publicada (PR #11) |
 
 **Pendiente de decidir o confirmar:**
 - La estructura real de carpetas de OneDrive.

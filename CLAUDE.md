@@ -8,6 +8,14 @@ Repositorio: `Musicos-Bethel/cancionero` (organización de la iglesia; antes `dn
 App publicada: https://musicos-bethel.github.io/cancionero/
 `main` está protegida: los cambios entran solo por PR y con la comprobación `build` en verde.
 
+## OneDrive
+- Conectado desde el 23/11/2026 (registro en Microsoft Entra del líder de banda; Id. en `src/config.js`).
+  Inicio de sesión con PKCE propio (`src/sources/onedrive-auth.js`), lectura con Microsoft Graph
+  (`src/sources/onedrive.js`). La demostración sigue siendo el origen por defecto.
+- El modo líder escribe solo en la carpeta de la app (`Aplicaciones/Cancionero Bethel/`): nunca en la
+  carpeta de canciones. Cambiar a `Files.ReadWrite` (escribir en la biblioteca) es decisión de Nathanael.
+- Pruebas sin Microsoft: `tests/helpers/fake-drive.js` simula OneDrive (Graph y descargas).
+
 ## Reglas
 - **Idioma:** todo en español de España (interfaz, comentarios, commits, PR). Interfaz sobria, sin emojis
   ni rótulos en mayúsculas.
@@ -29,8 +37,6 @@ App publicada: https://musicos-bethel.github.io/cancionero/
   - Comprueba en Chrome móvil emulado (412 px, Playwright) que la página no se ensancha
     (`scrollWidth == clientWidth`) y que no hay errores en la consola.
 - **No hay que tocar:**
-  - OneDrive (fases 2b y 2c) está en pausa hasta que Nathanael confirme el registro en Azure con el
-    líder de banda. No lo empieces por tu cuenta.
   - Los tonos de listas y voces son de concierto; los metales se transportan
     (`writtenOffset` en `src/library/library.js`).
   - Las canciones creadas con el editor van con `origin: 'local'` y `source: 'editor'`.

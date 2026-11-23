@@ -19,44 +19,68 @@ export async function pool(items, n, fn) {
  *    demanda o al preparar las listas próximas (ver prefetch)
  *  - lo que desaparece del origen se borra del dispositivo
  */
-export async function syncFrom(source, { onProgress } = {}) {
-  const remote = (await source.list())
-    .map((r) => ({ ...r, info: classifyPath(r.path, source.layout?.() ?? null) }))
-    .filter((r) => r.info);
-  const local = (await db.getAllFiles()).filter((f) => f.origin === 'remote');
+/**
+ * Qué hay que hacer con cada archivo (puro, para poder probarlo):
+ *  removed:     rutas que ya no están en el origen (o son de otro origen)
+ *  download:    archivos nuevos o cambiados (eTag distinto)
+ *  reclassify:  archivos iguales pero en otra sección/categoría porque cambió la
+ *               estructura de carpetas: se actualizan sin volver a descargarlos
+ */
+export function planSync(local, remote, sourceId) {
   const localByPath = new Map(local.map((f) => [f.path, f]));
   const remotePaths = new Set(remote.map((r) => r.path));
-
-  const removed = local.filter((f) => f.source !== source.id || !remotePaths.has(f.path)).map((f) => f.path);
-  const changed = remote.filter((r) => {
+  const removed = local.filter((f) => f.source !== sourceId || !remotePaths.has(f.path)).map((f) => f.path);
+  const download = [];
+  const reclassify = [];
+  for (const r of remote) {
     const l = localByPath.get(r.path);
-    return !l || l.source !== source.id || l.etag !== r.etag;
-  });
+    if (!l || l.source !== sourceId || l.etag !== r.etag) download.push(r);
+    else if (l.section !== r.info.section || l.kind !== r.info.kind || (l.depth ?? 1) !== r.info.depth) {
+      // Si pasa de PDF/imagen a texto no tenemos el texto: hay que descargarlo.
+      if (!isBinaryKind(r.info.kind) && typeof l.text !== 'string') download.push(r);
+      else reclassify.push({ ...l, section: r.info.section, kind: r.info.kind, depth: r.info.depth, ext: r.info.ext });
+    }
+  }
+  return { removed, download, reclassify, added: download.filter((r) => !localByPath.has(r.path)).length };
+}
+
+export async function syncFrom(source, { onProgress } = {}) {
+  const listed = (await source.list()).map((r) => ({ ...r, info: classifyPath(r.path, source.layout?.() ?? null) }));
+  const remote = listed.filter((r) => r.info);
+  // Para Ajustes: cuántos archivos hay, cuántos se reconocen y ejemplos de los que no.
+  const ignored = listed.filter((r) => !r.info).map((r) => r.path);
+  const local = (await db.getAllFiles()).filter((f) => f.origin === 'remote');
+  const localPaths = new Set(local.map((f) => f.path));
+  const remotePaths = new Set(remote.map((r) => r.path));
+  const { removed, download, reclassify, added } = planSync(local, remote, source.id);
 
   let done = 0;
-  const added = changed.filter((r) => !localByPath.has(r.path)).length;
-  const records = [];
+  const records = [...reclassify];
   const staleBlobs = [];
-  await pool(changed, 6, async (r) => {
+  await pool(download, 6, async (r) => {
     const { section, ext, kind, depth } = r.info;
     const rec = { path: r.path, origin: 'remote', source: source.id, section, ext, kind, depth, etag: r.etag, size: r.size ?? 0 };
     if (isBinaryKind(kind)) {
-      if (localByPath.has(r.path)) staleBlobs.push(r.path);
+      if (localPaths.has(r.path)) staleBlobs.push(r.path);
     } else {
       const text = decodeText(await source.getBuffer(r.path));
       rec.text = text;
       if (kind === 'text') rec.meta = songMeta(text, ext);
     }
     records.push(rec);
-    onProgress?.(++done, changed.length);
+    onProgress?.(++done, download.length);
   });
 
   if (removed.length) await db.deleteFiles(removed);
   for (const p of staleBlobs) await db.deleteBlob(p);
   if (records.length) await db.putFiles(records);
-  await db.kvSet('lastSync', { at: Date.now(), source: source.id });
+  await db.kvSet('lastSync', { at: Date.now(), source: source.id, total: listed.length, recognized: remote.length, ignored: ignored.slice(0, 8) });
 
-  return { added, updated: changed.length - added, removed: removed.filter((p) => !remotePaths.has(p)).length };
+  return {
+    added,
+    updated: download.length - added + reclassify.length,
+    removed: removed.filter((p) => !remotePaths.has(p)).length,
+  };
 }
 
 /** Devuelve el contenido de un PDF o imagen, descargándolo si hace falta. */

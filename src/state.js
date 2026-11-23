@@ -7,7 +7,7 @@ import { LoginRequiredError, FolderNotFoundError } from './sources/errors.js';
 import { upcomingLists, resolveItem, SECTIONS } from './library/library.js';
 import { songMeta } from './chordpro/song-doc.js';
 import { applyOutbox } from './lists/outbox.js';
-import { DEFAULT_LAYOUT } from './config.js';
+import { DEFAULT_LAYOUT, migrateLayout } from './config.js';
 
 export const DEFAULT_PEDAL = {
   scrollDown: ['PageDown', 'ArrowDown'],
@@ -72,7 +72,7 @@ export async function loadSettings() {
     ...DEFAULT_SETTINGS,
     ...saved,
     pedal: { ...DEFAULT_PEDAL, ...(saved.pedal ?? {}) },
-    layout: { ...DEFAULT_LAYOUT, ...(saved.layout ?? {}) },
+    layout: migrateLayout(saved.layout),
   };
   state.sync.last = await db.kvGet('lastSync', null);
   emit('settings');

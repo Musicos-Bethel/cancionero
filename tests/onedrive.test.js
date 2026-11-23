@@ -96,3 +96,13 @@ test('inicio de sesión: PKCE y permisos', async () => {
   assert.equal(s2.startedAt, 1000);
   assert.deepEqual(s2.account, { name: 'X' });
 });
+
+test('volver a entrar: sin selector de cuenta y en silencio', () => {
+  const base = { challenge: 'C', state: 'S', redirect: 'https://musicos-bethel.github.io/cancionero/', loginHint: 'cuenta@example.com' };
+  const silent = new URL(authorizeUrl({ ...base, prompt: 'none' }));
+  assert.equal(silent.searchParams.get('prompt'), 'none');
+  assert.equal(silent.searchParams.get('login_hint'), 'cuenta@example.com');
+  const normal = new URL(authorizeUrl({ ...base, prompt: null }));
+  assert.equal(normal.searchParams.has('prompt'), false);
+  assert.equal(new URL(authorizeUrl({ challenge: 'C', state: 'S', redirect: base.redirect })).searchParams.get('prompt'), 'select_account');
+});
