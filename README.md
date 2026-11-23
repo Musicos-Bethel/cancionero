@@ -317,7 +317,7 @@ de la iglesia»). Después se retomará OneDrive (2b) con la dirección definiti
 | — | Editor de canciones de voces | Publicada (PR #5) |
 | — | Logo de la iglesia | Publicada (PR #6) |
 | — | Demostración aprobada por el líder de banda | 17/11/2026 |
-| Migración | Repositorio a la organización de la iglesia y página de mudanza | **En curso (23/11/2026):** organización `Musicos-Bethel` creada; transferencia y publicación en la dirección nueva |
+| Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio transferido a `Musicos-Bethel`; falta activar Pages en la organización |
 | 2b | Lectura desde OneDrive | Después de la migración: falta el registro en Microsoft Entra (lo hace el líder de banda) |
 | 2c | Escritura en OneDrive (listas y canciones creadas) | Después de 2b; falta decidir `appFolder` o `library` |
 | — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Propuesto, sin empezar; no depende de OneDrive |
@@ -367,19 +367,12 @@ de la iglesia. Se conservan el historial, los PR y el despliegue. La app pasará
 5. **Proteger `main`:** regla que exija PR y que pase *build*, sin borrado ni *force push*.
 6. **Acceso de Claude:** instalar o ampliar la aplicación de Claude en GitHub a `Musicos-Bethel` con acceso a
    `cancionero`, y actualizar las instrucciones del proyecto de Claude (dirección y repositorio).
-7. **Encargo 1 (este repositorio, rama `claude/mudanza-org`):** cambiar la dirección en README y
-   CLAUDE.md; sección de titularidad y mantenimiento; comprobar `BASE`; buscar otras referencias a
-   `dnathanospina.github.io`; aviso discreto en el primer arranque sin datos: «¿Usabas el cancionero en
-   la dirección antigua? Restaura tu copia en Ajustes → Copia de seguridad».
-8. **Encargo 2 (página de mudanza):** repositorio `dnathanospina/dnathanospina.github.io` (sitio de
-   usuario) con:
-   - `cancionero/index.html`: «El cancionero se ha mudado», enlace a la dirección nueva, botón «Guardar
-     mi copia de seguridad» que lee la IndexedDB de este origen y genera el mismo JSON que
-     `createBackup()` (`src/features/backup.js`, formato `cancionero-bethel-copia`, versión 1), y
-     redirección automática a los 5 s si no hay datos locales.
-   - `cancionero/sw.js`: service worker de despedida (mismo nombre que el de la app): `skipWaiting`,
-     borra las cachés (no la IndexedDB), se desregistra y recarga las ventanas.
-   - Se publica justo después de transferir y se mantiene al menos seis meses.
+7. **Repositorio (PR #9, rama `claude/mudanza-org`):** dirección nueva y titularidad en README y
+   CLAUDE.md; `BASE` sin cambios.
+8. **Sin página de mudanza (decidido el 23/11/2026):** en la dirección antigua solo tenían la app
+   instalada el líder de banda y Nathanael, así que no se publica página de mudanza ni aviso de
+   «restaurar copia». Cada uno exporta su copia en la dirección antigua (si aún abre sin conexión) y la
+   restaura en la nueva.
 9. **Músicos:** mensaje con la dirección nueva; reinstalar (iPhone: Safari → Compartir → Añadir a
    pantalla de inicio; Android: Chrome → Instalar app) y *Restaurar* la copia.
 10. **Después:** el líder de banda registra la app en Microsoft Entra (solo cuentas personales de
@@ -394,6 +387,5 @@ recupera PDF ni imágenes importados, las listas de la «OneDrive simulada» de 
 sesión de modo líder.
 
 ### Vuelta atrás
-Un Owner puede devolver el repositorio a `dnathanospina` con *Transfer ownership*. Antes habría que
-retirar la carpeta `cancionero/` del sitio de usuario. Por eso no se registra nada en Azure hasta que la
+Un Owner puede devolver el repositorio a `dnathanospina` con *Transfer ownership*. Por eso no se registra nada en Azure hasta que la
 dirección nueva lleve unos días funcionando.
