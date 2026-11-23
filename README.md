@@ -334,14 +334,14 @@ Después se retomará OneDrive (2b) con la dirección definitiva.
    Cómo trabajar:
    - Respóndeme en español, de forma directa y práctica. No soy programador profesional: explica las
      decisiones técnicas en pocas palabras.
-   - Al empezar, lee el documento del proyecto claude/decisiones-iniciales.md. En el repositorio, lee
+   - Al empezar, lee el documento del proyecto claude/cancionero-migrado.md. En el repositorio, lee
      README.md (funciones, formatos, hoja de ruta y «Primeros pasos tras la migración») y CLAUDE.md
      (reglas de desarrollo).
    - Trabaja directamente sobre el repositorio Musicos-Bethel/cancionero: una rama por tarea, PR a main
      con resumen en español, npm test y npm run build sin errores, y comprobación en un móvil simulado.
    - main está protegida: los cambios entran solo por PR y con la comprobación build en verde.
    - Fusiona los PR solo cuando yo lo pida. Al fusionar, la app se publica para todos.
-   - Al terminar una tarea, actualiza decisiones-iniciales.md, y el README si cambian funciones.
+   - Al terminar una tarea, actualiza claude/cancionero-migrado.md, y el README si cambian funciones.
 
    Decisiones fijas:
    - Diseño estilo iOS con cristal, sobrio, sin emojis. Dorado solo como acento. Logo de la iglesia en
