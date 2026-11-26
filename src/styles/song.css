@@ -108,7 +108,9 @@ button.cap-value { cursor: pointer; border-radius: 22px; }
 button.cap-value:disabled { cursor: default; }
 .cap-sep { width: 0.5px; height: 24px; background: var(--sep); margin: 0 2px; flex: none; }
 .cap-group { display: inline-flex; align-items: center; }
-.aa { gap: 1px; align-items: baseline; }
+/* «AA» centrado en su botón: las dos letras comparten línea base dentro de un
+   grupo propio, y es el grupo (no las letras) lo que se centra. */
+.aa-glyph { display: inline-flex; align-items: baseline; gap: 1px; line-height: 1; transform: translateY(1px); }
 .a-small { font-size: 13px; font-weight: 600; }
 .a-big { font-size: 19px; font-weight: 600; }
 
