@@ -380,3 +380,9 @@ export function linkReport(lib) {
   }
   return { vocesSinBateria, bateriaSinVoces, metalesSinVoces, noEncontradas, duplicados: lib.duplicates };
 }
+
+/** Rutas que hay que borrar en OneDrive: el archivo, o la carpeta si es una canción de varias imágenes. */
+export function deletionPaths(song) {
+  if (song.kind === 'imageset') return [song.paths[0].split('/').slice(0, -1).join('/')];
+  return [...song.paths];
+}

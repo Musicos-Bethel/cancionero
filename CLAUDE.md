@@ -12,8 +12,10 @@ App publicada: https://musicos-bethel.github.io/cancionero/
 - Conectado desde el 23/11/2026 (registro en Microsoft Entra del líder de banda; Id. en `src/config.js`).
   Inicio de sesión con PKCE propio (`src/sources/onedrive-auth.js`), lectura con Microsoft Graph
   (`src/sources/onedrive.js`). La demostración sigue siendo el origen por defecto.
-- El modo líder escribe solo en la carpeta de la app (`Aplicaciones/Cancionero Bethel/`): nunca en la
-  carpeta de canciones. Cambiar a `Files.ReadWrite` (escribir en la biblioteca) es decisión de Nathanael.
+- Permiso `Files.ReadWrite` (decidido por Nathanael el 23/11/2026, para eliminar canciones). Las listas
+  y el PIN se escriben en la carpeta de la app (`Aplicaciones/Cancionero Bethel/`). En la carpeta de
+  canciones la app solo borra, cuando el líder lo pide y con confirmación (`removeSong`). No escribas
+  ni borres nada más ahí sin que Nathanael lo pida.
 - Pruebas sin Microsoft: `tests/helpers/fake-drive.js` simula OneDrive (Graph y descargas).
 
 ## Reglas

@@ -223,9 +223,12 @@ dispositivo hasta que se cierra la app.
 
 El destino está en `src/config.js` (`WRITE_TARGET`). Hay dos opciones:
 
-- **`appFolder`** (por defecto): `Aplicaciones/Cancionero Bethel/` en OneDrive. Necesita el permiso
-  mínimo `Files.ReadWrite.AppFolder`, y así la app no puede tocar las canciones.
+- **`appFolder`** (por defecto): `Aplicaciones/Cancionero Bethel/` en OneDrive. Por sí solo bastaría con
+  el permiso mínimo `Files.ReadWrite.AppFolder`.
 - **`library`**: dentro de la carpeta del cancionero. Necesita `Files.ReadWrite`.
+
+Además, `songs: true` permite eliminar canciones de la carpeta del cancionero desde el modo líder, y
+también necesita `Files.ReadWrite` (es lo que se usa desde el 23/11/2026).
 
 La app usa rutas «lógicas» (`Listas/…`, `ajustes-lider.json`) y cada origen de datos las traduce, así
 que cambiar de destino no afecta al editor.
@@ -258,8 +261,10 @@ biblioteca. Después funciona sin conexión con lo descargado, como con la demos
 
 - **Registro en Microsoft Entra** (hecho por el líder de banda el 23/11/2026): solo cuentas personales de
   Microsoft, plataforma SPA, URI de redirección `https://musicos-bethel.github.io/cancionero/`, permisos
-  delegados `Files.Read`, `Files.ReadWrite.AppFolder`, `offline_access` y `User.Read` (este lo añade
-  Microsoft solo; sirve para iniciar sesión y mostrar la cuenta). El Id. de aplicación está en
+  delegados `Files.ReadWrite` (desde el 23/11/2026, para poder borrar canciones), `offline_access` y
+  `User.Read` (este lo añade Microsoft solo; sirve para iniciar sesión y mostrar la cuenta). Antes eran
+  `Files.Read` y `Files.ReadWrite.AppFolder`; al cambiar, cada móvil ve una vez la pantalla de Microsoft
+  para aceptar el permiso nuevo. El Id. de aplicación está en
   `src/config.js` (`ONEDRIVE.clientId`); no es secreto.
 - **Inicio de sesión:** OAuth 2.0 con PKCE y redirección a Microsoft (sin bibliotecas externas:
   `src/sources/onedrive-auth.js`). Al volver, la app termina el proceso y limpia la dirección.
@@ -274,8 +279,13 @@ biblioteca. Después funciona sin conexión con lo descargado, como con la demos
   subcarpetas, descarga los textos que cambian (por eTag) y los PDF e imágenes de las próximas listas. Los
   archivos se descargan de la dirección temporal que da OneDrive, sin enviar el token.
 - **Listas y PIN del modo líder:** en `Aplicaciones/Cancionero Bethel/` (la carpeta que OneDrive crea para
-  la app), con control de versiones y conflictos como en la demostración. La app no puede escribir ni
-  borrar en la carpeta de canciones. Una carpeta `Listas` dentro de la carpeta del cancionero no se usa.
+  la app), con control de versiones y conflictos como en la demostración. En la carpeta de canciones la app
+  solo borra (cuando el líder lo pide). Una carpeta `Listas` dentro de la carpeta del cancionero no se usa.
+- **Eliminar canciones** (modo líder, con OneDrive): en una canción, «Más» → «Eliminar canción». Pide
+  confirmación, avisa si está en alguna lista próxima y la borra de OneDrive para todos (va a la papelera
+  de OneDrive, que la guarda 30 días). Solo borra ese archivo: la batería o los metales de la misma
+  canción no. Si alguien la cambió en OneDrive desde la última actualización, no se borra. Hace falta
+  conexión. Con una sesión iniciada con los permisos antiguos, avisa y ofrece volver a entrar.
 - **Canciones y hojas creadas con los editores:** siguen guardándose en el dispositivo (fase 2c).
 - **Cambiar de origen** borra del dispositivo la biblioteca del origen anterior, los cambios pendientes y
   la sesión de modo líder (lo importado y lo creado con los editores se queda).

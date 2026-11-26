@@ -17,9 +17,14 @@ import { LoginRequiredError, OfflineError } from './errors.js';
 const TOKENS_KEY = 'onedrive-sesion';
 const LOGIN_KEY = 'onedrive-login'; // datos del inicio de sesión en curso (localStorage)
 
-/** Permisos: leer archivos, escribir en la carpeta de la app (o en todo, según WRITE_TARGET) y renovar. */
-export function scopes(target = WRITE_TARGET.location) {
-  return ['Files.Read', target === 'library' ? 'Files.ReadWrite' : 'Files.ReadWrite.AppFolder', 'offline_access', 'User.Read'];
+/**
+ * Permisos: leer y escribir archivos, renovar la sesión y ver la cuenta.
+ * Con `songs` (borrar canciones) o escribiendo en la biblioteca hace falta
+ * Files.ReadWrite; si no, basta con la carpeta de la app.
+ */
+export function scopes(target = WRITE_TARGET) {
+  const all = target.location === 'library' || target.songs;
+  return all ? ['Files.ReadWrite', 'offline_access', 'User.Read'] : ['Files.Read', 'Files.ReadWrite.AppFolder', 'offline_access', 'User.Read'];
 }
 
 /** Dirección de vuelta: la de la app (https://musicos-bethel.github.io/cancionero/). */

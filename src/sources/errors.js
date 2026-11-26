@@ -43,3 +43,11 @@ export class FolderNotFoundError extends Error {
     this.folders = folders;
   }
 }
+
+/** OneDrive no deja hacer algo porque la sesión se inició con permisos de una versión anterior. */
+export class PermissionError extends Error {
+  constructor(message = 'Falta el permiso de OneDrive para hacer esto. Vuelve a entrar en OneDrive para aceptarlo.') {
+    super(message);
+    this.name = 'PermissionError';
+  }
+}

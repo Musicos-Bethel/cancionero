@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createOneDriveSource } from '../src/sources/onedrive.js';
 import { authorizeUrl, pkceChallenge, scopes, sessionFromTokens } from '../src/sources/onedrive-auth.js';
-import { ConflictError, FolderNotFoundError, OfflineError } from '../src/sources/errors.js';
+import { ConflictError, FolderNotFoundError, OfflineError, PermissionError } from '../src/sources/errors.js';
 import { classifyPath } from '../src/library/library.js';
 import { fakeDrive } from './helpers/fake-drive.js';
 
@@ -82,8 +82,10 @@ test('sin conexión', async () => {
 test('inicio de sesión: PKCE y permisos', async () => {
   // Ejemplo del RFC 7636
   assert.equal(await pkceChallenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'), 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
-  assert.deepEqual(scopes('appFolder'), ['Files.Read', 'Files.ReadWrite.AppFolder', 'offline_access', 'User.Read']);
-  assert.deepEqual(scopes('library'), ['Files.Read', 'Files.ReadWrite', 'offline_access', 'User.Read']);
+  assert.deepEqual(scopes({ location: 'appFolder' }), ['Files.Read', 'Files.ReadWrite.AppFolder', 'offline_access', 'User.Read']);
+  assert.deepEqual(scopes({ location: 'appFolder', songs: true }), ['Files.ReadWrite', 'offline_access', 'User.Read']);
+  assert.deepEqual(scopes({ location: 'library' }), ['Files.ReadWrite', 'offline_access', 'User.Read']);
+  assert.deepEqual(scopes(), ['Files.ReadWrite', 'offline_access', 'User.Read']); // configuración actual
   const u = new URL(authorizeUrl({ challenge: 'C', state: 'S', redirect: 'https://musicos-bethel.github.io/cancionero/' }));
   assert.equal(u.origin + u.pathname, 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize');
   assert.equal(u.searchParams.get('client_id'), '837f9cf6-8578-477d-bf55-952a19779d8c');
@@ -105,4 +107,36 @@ test('volver a entrar: sin selector de cuenta y en silencio', () => {
   const normal = new URL(authorizeUrl({ ...base, prompt: null }));
   assert.equal(normal.searchParams.has('prompt'), false);
   assert.equal(new URL(authorizeUrl({ challenge: 'C', state: 'S', redirect: base.redirect })).searchParams.get('prompt'), 'select_account');
+});
+
+test('borrar canciones de la carpeta del cancionero', async () => {
+  const d = fakeDrive({ 'Cancionero/Alabanzas/Te alabaré.pro': 'a', 'Cancionero/Partituras batería/Santo/1.png': 'p', 'Cancionero/Partituras batería/Santo/2.png': 'p' }, { app: { 'Listas/Domingo.txt': 'l' } });
+  const target = { location: 'appFolder', listsFolder: 'Listas', leaderFile: 'ajustes-lider.json', songs: true };
+  const src = make(d, undefined, { target });
+  assert.equal(src.canDeleteSongs, true);
+  await src.list();
+  const etag = d.etags.get('root/Cancionero/Alabanzas/Te alabaré.pro');
+  await assert.rejects(src.removeSong('Alabanzas/Te alabaré.pro', { ifMatch: '"{otra},1"' }), (e) => e instanceof ConflictError);
+  await src.removeSong('Alabanzas/Te alabaré.pro', { ifMatch: etag });
+  assert.ok(!('root/Cancionero/Alabanzas/Te alabaré.pro' in d.all));
+  await src.removeSong('Alabanzas/Te alabaré.pro'); // ya no existe: sin error
+  // Nunca la carpeta de la app por este camino
+  await assert.rejects(src.removeSong('Listas/Domingo.txt'), /no puede borrar/);
+  assert.equal(d.all['app/Listas/Domingo.txt'], 'l');
+  // Sin el permiso: no se ofrece
+  const sinPermiso = make(d, undefined, { target: { ...target, songs: false } });
+  assert.equal(sinPermiso.canDeleteSongs, false);
+  await assert.rejects(sinPermiso.removeSong('Partituras batería/Santo'), /no puede borrar/);
+});
+
+test('permiso insuficiente (sesión con los permisos antiguos)', async () => {
+  const forbidden = async () => ({ ok: false, status: 403, json: async () => ({ error: { code: 'accessDenied' } }) });
+  const src = createOneDriveSource({ fetchFn: forbidden, token: async () => 't', isOnline: () => true, target: { location: 'appFolder', listsFolder: 'Listas', leaderFile: 'ajustes-lider.json', songs: true } });
+  await assert.rejects(src.removeSong('Himnos/x.cho'), PermissionError);
+});
+
+test('borrar una canción de varias imágenes borra su carpeta', async () => {
+  const { deletionPaths } = await import('../src/library/library.js');
+  assert.deepEqual(deletionPaths({ kind: 'imageset', paths: ['Partituras batería/Santo/1.png', 'Partituras batería/Santo/2.png'] }), ['Partituras batería/Santo']);
+  assert.deepEqual(deletionPaths({ kind: 'pdf', paths: ['Partituras batería/Santo.pdf'] }), ['Partituras batería/Santo.pdf']);
 });

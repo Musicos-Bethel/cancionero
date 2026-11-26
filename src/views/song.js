@@ -2,7 +2,7 @@ import { h, clear } from '../ui/dom.js';
 import { goBackTo, replaceTo } from '../nav.js';
 import { icon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
-import { openSheet } from '../ui/dialog.js';
+import { openSheet, confirmDialog } from '../ui/dialog.js';
 import { state, subscribe, setSettings, currentSource } from '../state.js';
 import * as db from '../db.js';
 import { resolveItem, partVersion, vocesVersion, SECTION_SHORT, SECTION_LABEL, PARTS, missingPartLabel, isMetal, writtenOffset, instrumentTuning, TUNING_PC } from '../library/library.js';
@@ -23,6 +23,9 @@ import { enterImmersive, exitImmersive, isImmersive, onImmersiveChange } from '.
 import { ensureBlob } from '../sync/sync.js';
 import { link, emptyState, prettyKey } from '../ui/components.js';
 import { isLeader } from '../leader/leader.js';
+import { canDeleteSong, deleteSong, listsUsing } from '../library/delete-song.js';
+import { ConflictError, OfflineError, PermissionError, LoginRequiredError } from '../sources/errors.js';
+import { reconnect } from '../sources/onedrive-auth.js';
 
 const FONT_MIN = 0.7;
 const FONT_MAX = 2.4;
@@ -412,6 +415,14 @@ export function SongView({ section, id, query, backHref }) {
             icon('next', { size: 16, cls: 'icon chev' }),
           )
         : null,
+      isLeader() && canDeleteSong(song)
+        ? h(
+            'button.sheet-row.action.danger-text',
+            { onclick: () => (s.close(), askDelete()) },
+            icon('trash', { size: 20 }),
+            h('span.sheet-row-label', 'Eliminar canción'),
+          )
+        : null,
       ...others.map((o) =>
         h(
           'a.sheet-row.action',
@@ -423,6 +434,36 @@ export function SongView({ section, id, query, backHref }) {
       ),
     ];
     const s = openSheet({ title: song.title, subtitle: [song.artist, SECTION_LABEL[song.section]].filter(Boolean).join(' · '), body: [h('div.group.sheet-group', rows)] });
+  }
+
+  /** Eliminar la canción de OneDrive (modo líder), con confirmación. */
+  async function askDelete() {
+    const part = song.section === 'voces' ? '' : ` (${SECTION_LABEL[song.section].toLowerCase()})`;
+    const used = listsUsing(lib, song);
+    const text = [
+      `Se borra de OneDrive para todos los músicos${part}. Va a la papelera de OneDrive, donde se puede recuperar durante 30 días.`,
+      used.length ? `Está en ${used.length === 1 ? 'la lista' : 'las listas'} ${used.map((l) => `«${l.name}»`).join(', ')}.` : '',
+      song.section === 'voces' && others.length ? 'Sus partituras de batería o metales no se borran.' : '',
+    ].filter(Boolean).join(' ');
+    if (!(await confirmDialog({ title: `¿Eliminar «${song.title}»?`, text, confirm: 'Eliminar', danger: true }))) return;
+    if (!navigator.onLine) return toast('Sin conexión: para eliminar una canción hace falta internet.');
+    try {
+      await deleteSong(song);
+      toast('Canción eliminada de OneDrive');
+      goBackTo(back); // la canción borrada no queda en el historial
+    } catch (e) {
+      if (e instanceof OfflineError) toast('Sin conexión: no se ha eliminado.');
+      else if (e instanceof ConflictError) toast('Alguien ha cambiado esta canción en OneDrive. Actualiza la biblioteca y vuelve a intentarlo.', { timeout: 6000 });
+      else if (e instanceof PermissionError || e instanceof LoginRequiredError) {
+        toast(e instanceof PermissionError ? 'Hay que volver a entrar en OneDrive para aceptar el permiso de borrar.' : 'La sesión de OneDrive ha caducado.', {
+          timeout: 8000,
+          action: { label: 'Volver a entrar', run: () => reconnect() },
+        });
+      } else {
+        console.error(e);
+        toast('No se pudo eliminar: ' + (e.message || e));
+      }
+    }
   }
 
   async function init() {

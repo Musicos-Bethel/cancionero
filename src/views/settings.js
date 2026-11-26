@@ -373,7 +373,8 @@ export function SettingsView() {
           'p.set-desc',
           'Las listas y el PIN se guardarán en ',
           h('strong', WRITE_TARGET.location === 'appFolder' ? `Aplicaciones/Cancionero Bethel/${WRITE_TARGET.listsFolder}` : `${layout.root}/${WRITE_TARGET.listsFolder}`),
-          WRITE_TARGET.location === 'appFolder' ? ' (carpeta propia de la app: no puede tocar las canciones).' : '.',
+          WRITE_TARGET.location === 'appFolder' ? ' (carpeta propia de la app).' : '.',
+          WRITE_TARGET.songs ? ' En modo líder se pueden eliminar canciones desde «Más» en cada canción: van a la papelera de OneDrive.' : '',
         ),
       ),
     );

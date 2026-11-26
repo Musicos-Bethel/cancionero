@@ -1,6 +1,6 @@
 import { ONEDRIVE, WRITE_TARGET, DEFAULT_LAYOUT } from '../config.js';
 import { normalize } from '../util/text.js';
-import { ConflictError, OfflineError, FolderNotFoundError } from './errors.js';
+import { ConflictError, OfflineError, FolderNotFoundError, PermissionError } from './errors.js';
 import { getAccessToken } from './onedrive-auth.js';
 
 /**
@@ -198,6 +198,7 @@ export function createOneDriveSource({
       if (res.status === 412) throw new ConflictError('changed', path);
       if (res.status === 409) throw new ConflictError(ifNoneMatch === '*' ? 'exists' : 'changed', path);
       if (res.status === 404 && ifMatch) throw new ConflictError('deleted', path);
+      if (res.status === 403) throw new PermissionError();
       if (!res.ok) throw await graphError(res);
       const meta = await res.json();
       downloads.delete(path);
@@ -209,6 +210,23 @@ export function createOneDriveSource({
       const res = await api(itemUrl(path), { method: 'DELETE', headers: ifMatch ? { 'If-Match': ifMatch } : {} });
       if (res.status === 404) return; // ya no existe
       if (res.status === 412) throw new ConflictError('changed', path);
+      if (!res.ok) throw await graphError(res);
+      downloads.delete(path);
+    },
+
+    /** ¿Se pueden borrar canciones de la carpeta del cancionero? */
+    canDeleteSongs: !!target.songs,
+
+    /**
+     * Borra un archivo (o la carpeta de una canción de imágenes) de la carpeta
+     * del cancionero. Va a la papelera de OneDrive. Nunca toca la carpeta de la app.
+     */
+    async removeSong(path, { ifMatch } = {}) {
+      if (!target.songs || isWritePath(path) || !path) throw new Error(`La app no puede borrar «${path}».`);
+      const res = await api(itemUrl(path), { method: 'DELETE', headers: ifMatch ? { 'If-Match': ifMatch } : {} });
+      if (res.status === 404) return; // ya no existe
+      if (res.status === 412) throw new ConflictError('changed', path);
+      if (res.status === 403) throw new PermissionError();
       if (!res.ok) throw await graphError(res);
       downloads.delete(path);
     },

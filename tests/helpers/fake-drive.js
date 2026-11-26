@@ -53,6 +53,10 @@ export function fakeDrive(files, { app = {} } = {}) {
       return json(201, { eTag: etags.get(p) });
     }
     if (opts.method === 'DELETE') {
+      if (!(p in all) && isDir) {
+        for (const k of Object.keys(all)) if (k.startsWith(p + '/')) delete all[k];
+        return { ok: true, status: 204, json: async () => ({}) };
+      }
       if (!(p in all)) return json(404, {});
       if (opts.headers['If-Match'] && opts.headers['If-Match'] !== etags.get(p)) return json(412, {});
       delete all[p];
