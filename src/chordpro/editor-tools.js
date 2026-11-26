@@ -143,4 +143,4 @@ export function highlightTokens(text) {
 }
 
 /** Secciones habituales para el botón «Sección». */
-export const SECTION_NAMES = ['Intro', 'Estrofa', 'Pre-coro', 'Coro', 'Puente', 'Interludio', 'Solo', 'Final'];
+export const SECTION_NAMES = ['Intro', 'Estrofa', 'Pre-coro', 'Coro', 'Puente', 'Interludio', 'Solo', 'Final', 'Outro', 'Cierre'];

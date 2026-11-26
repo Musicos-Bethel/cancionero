@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { songChords, keyChords, wrapLines, insertLine, highlightTokens, validChord } from '../src/chordpro/editor-tools.js';
+import { songChords, keyChords, wrapLines, insertLine, highlightTokens, validChord, SECTION_NAMES } from '../src/chordpro/editor-tools.js';
 
 test('acordes de la canción, por orden y sin repetir', () => {
   const body = '{c: Intro}\n[E/G#][A]   [A/C#][D]\n[A]Ho[*rit.]la [E]que [A]tal\n{sot}\n[x] no cuenta\n{eot}';
@@ -43,4 +43,9 @@ test('colorea sin cambiar el texto', () => {
   assert.deepEqual(of('label'), ['Intro']);
   assert.deepEqual(of('chord'), ['[A]', '[E]']);
   assert.deepEqual(of('hl'), ['2x', '3x']);
+});
+
+test('el botón Sección ofrece Outro y Cierre después de Final', () => {
+  const i = SECTION_NAMES.indexOf('Final');
+  assert.deepEqual(SECTION_NAMES.slice(i, i + 3), ['Final', 'Outro', 'Cierre']);
 });
