@@ -458,8 +458,9 @@ Todo lo hecho hasta ahora está fusionado y publicado; no hay PR abiertos.
 | — | Editor al estilo SongBook (códigos, paleta de acordes, colores) | Publicada (PR #16) |
 | — | Metrónomo y desplazamiento según la duración | Publicada (PR #17) |
 | — | Botón «atrás» coherente con Android, sin bucles | Publicada (PR #18) |
-| — | Partituras PDF en iPhone/iPad con iOS 16 y 17 (parches de compatibilidad) | En revisión |
-| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | En revisión |
+| — | Partituras PDF en iPhone/iPad con iOS 16 y 17 (parches de compatibilidad) | Publicada (PR #20) |
+| — | Secciones «Outro» y «Cierre» en los editores | Publicada (PR #21) |
+| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Publicada (PR #22, 26/11/2026) |
 
 ### Dispositivos antiguos
 
