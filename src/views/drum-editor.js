@@ -15,6 +15,8 @@ import { isLeader } from '../leader/leader.js';
 import { requestLeader } from '../leader/leader-ui.js';
 import { shareOrDownload } from '../features/backup.js';
 import { timeAgo } from '../ui/format.js';
+import { canSaveToLibrary, libraryLabel, saveToLibrary, newSongPath, editPaths, withoutFolderTags, libraryErrorText } from '../library/save-song.js';
+import { saveTargetCard, pickFolder } from '../ui/save-target.js';
 import { makeSortable } from '../ui/reorder.js';
 import { EDITOR_SOURCE } from './song-editor.js';
 import {
@@ -99,11 +101,22 @@ export function DrumEditorView({ id, query }) {
   const dirty = () => !same(draft, initial);
   let mode = 'edit'; // 'edit' | 'preview' | 'chordpro'
 
+  // ---------- Dónde se guarda (OneDrive o este dispositivo)
+  const saveTarget = saveTargetCard({
+    kind: file?.origin === 'remote' ? 'remote' : isOwnLocal ? 'local' : 'new',
+    section: 'bateria',
+    path: file?.path ?? '',
+    tags: draft.tags,
+    onUpload: () => upload(),
+    uploadLabel: sharedCopy ? `Subir mis cambios a ${libraryLabel()}` : undefined,
+  });
+
   // ---------- Borrador
   let saveTimer;
   function persistDraft() {
     clearTimeout(saveTimer);
     state.editingDirty = dirty();
+    saveTarget.setTags(draft.tags);
     saveTimer = setTimeout(() => {
       if (dirty()) db.kvSet(DRAFT_KEY, { id: id ?? null, draft, at: Date.now() });
       else db.kvDelete(DRAFT_KEY);
@@ -132,7 +145,12 @@ export function DrumEditorView({ id, query }) {
     h(
       'header.page-head',
       h('h1', original ? 'Editar hoja de batería' : 'Nueva hoja de batería'),
-      h('p.page-sub', 'De momento se guarda en este dispositivo. Para compartirla, usa «Exportar .cho» y súbela a la carpeta Bateria del cancionero en OneDrive.'),
+      h(
+        'p.page-sub',
+        canSaveToLibrary()
+          ? `Abajo eliges si se guarda en ${libraryLabel()} (en la carpeta de batería, para toda la banda) o solo en este dispositivo.`
+          : 'Se guarda en este dispositivo. Para compartirla, usa «Exportar .cho» y súbela a la carpeta de batería del cancionero en OneDrive.',
+      ),
     ),
     recover,
   );
@@ -482,7 +500,8 @@ export function DrumEditorView({ id, query }) {
     ['chordpro', 'ChordPro'],
   ];
   const pane = h('div.editor-pane');
-  const fileText = () => buildDrumFile(draft);
+  /** Texto del archivo. Con `path` de la biblioteca, sin repetir como {tag} la categoría que ya da su carpeta. */
+  const fileText = (path) => buildDrumFile(path ? { ...draft, tags: withoutFolderTags(draft.tags, path) } : draft);
   const textarea = h('textarea.song-text', {
     rows: 20,
     spellcheck: 'false',
@@ -557,7 +576,12 @@ export function DrumEditorView({ id, query }) {
     if (err) return;
     const name = fileName();
     const newId = normalize(name);
+    const toLibrary = saveTarget.target() === 'library';
     if (!original && lib.byId.bateria.has(newId)) {
+      if (toLibrary) {
+        msg.textContent = 'Esta canción ya tiene hoja de batería. Cambia el título o abre la existente y edítala.';
+        return;
+      }
       const ok = await confirmDialog({
         title: 'Esta canción ya tiene hoja de batería',
         text: 'Si guardas, en este dispositivo se verá la tuya en lugar de la existente.',
@@ -567,38 +591,111 @@ export function DrumEditorView({ id, query }) {
     }
     saveBtn.disabled = true;
     try {
-      const text = fileText();
-      let path = isOwnLocal ? file.path : `local/Bateria/${name}.cho`;
-      if (isOwnLocal && file.ext !== 'cho') {
-        await db.deleteFiles([file.path]);
-        path = path.replace(/\.[^./]+$/, '.cho');
+      if (toLibrary) {
+        if (file?.origin === 'remote') {
+          const { path, replaces } = editPaths(file);
+          await saveToLibrary({ path, text: fileText(path), create: !!replaces, ifMatch: file.etag, replaces, replacesEtag: file.etag });
+        } else {
+          const path = newSongPath('bateria', saveTarget.folder(), name);
+          await saveToLibrary({ path, text: fileText(path), create: true });
+        }
+      } else {
+        await saveLocal(name);
       }
-      await db.putFiles([
-        {
-          path,
-          origin: 'local',
-          source: EDITOR_SOURCE,
-          section: 'bateria',
-          ext: 'cho',
-          kind: 'text',
-          depth: 1,
-          etag: String(Date.now()),
-          size: text.length,
-          text,
-          meta: songMeta(text, 'cho'),
-        },
-      ]);
-      await dropDraft();
-      initial = structuredClone(draft);
-      await reloadLibrary();
-      toast(original ? 'Cambios guardados en este dispositivo' : 'Hoja de batería guardada en este dispositivo');
-      const target = link(`/cancion/bateria/${encodeURIComponent(newId)}`);
-      if (original) goBackTo(target, backHref);
-      else replaceTo(target);
+      await done(newId, toLibrary ? (original ? `Cambios guardados en ${libraryLabel()}` : `Hoja de batería guardada en ${libraryLabel()}`) : original ? 'Cambios guardados en este dispositivo' : 'Hoja de batería guardada en este dispositivo');
+    } catch (e) {
+      if (e?.name !== 'OfflineError') console.error(e);
+      saveBtn.disabled = false;
+      if (toLibrary && e?.name === 'OfflineError') {
+        const ok = await confirmDialog({
+          title: 'Sin conexión',
+          text: `No se puede guardar en ${libraryLabel()} ahora. ¿La guardas en este dispositivo? Cuando vuelva la conexión, ábrela en el editor y toca «Subir a ${libraryLabel()}».`,
+          confirm: 'Guardar en el dispositivo',
+        });
+        if (!ok) return;
+        saveBtn.disabled = true;
+        try {
+          await saveLocal(name);
+          await done(newId, 'Guardada en este dispositivo');
+        } catch (e2) {
+          console.error(e2);
+          toast('No se pudo guardar: ' + (e2.message || e2));
+          saveBtn.disabled = false;
+        }
+        return;
+      }
+      msg.className = 'form-msg error';
+      msg.textContent = 'No se pudo guardar: ' + libraryErrorText(e, 'la hoja');
+    }
+  }
+
+  /** Guarda en este dispositivo (origin 'local'). */
+  async function saveLocal(name) {
+    const text = fileText();
+    let path = isOwnLocal ? file.path : `local/Bateria/${name}.cho`;
+    if (isOwnLocal && file.ext !== 'cho') {
+      await db.deleteFiles([file.path]);
+      path = path.replace(/\.[^./]+$/, '.cho');
+    }
+    await db.putFiles([
+      {
+        path,
+        origin: 'local',
+        source: EDITOR_SOURCE,
+        section: 'bateria',
+        ext: 'cho',
+        kind: 'text',
+        depth: 1,
+        etag: String(Date.now()),
+        size: text.length,
+        text,
+        meta: songMeta(text, 'cho'),
+      },
+    ]);
+    await reloadLibrary();
+  }
+
+  /** Tras guardar: fuera borrador y a la hoja (sin dejar el editor en el historial). */
+  async function done(newId, message) {
+    await dropDraft();
+    initial = structuredClone(draft);
+    toast(message);
+    const target = link(`/cancion/bateria/${encodeURIComponent(newId)}`);
+    if (original) goBackTo(target, backHref);
+    else replaceTo(target);
+  }
+
+  /** Sube a la biblioteca compartida una hoja guardada solo en este dispositivo. */
+  async function upload() {
+    const err = validateSheet(draft);
+    msg.className = 'form-msg error';
+    msg.textContent = err ?? '';
+    if (err) return;
+    const label = libraryLabel();
+    let opts;
+    if (sharedCopy) {
+      const ok = await confirmDialog({
+        title: `¿Subir tus cambios a ${label}?`,
+        text: 'Sustituyen a la hoja que ve la banda (OneDrive guarda la anterior por si hay que recuperarla).',
+        confirm: 'Subir',
+      });
+      if (!ok) return;
+      const { path, replaces } = editPaths(sharedCopy);
+      opts = { path, create: !!replaces, ifMatch: sharedCopy.etag, replaces, replacesEtag: sharedCopy.etag };
+    } else {
+      const folder = await pickFolder({ section: 'bateria', title: `Subir a ${label}`, text: 'Elige la carpeta. Después la verá toda la banda y dejará de estar solo en este dispositivo.', tags: draft.tags });
+      if (folder == null) return;
+      opts = { path: newSongPath('bateria', folder, original.name), create: true };
+    }
+    saveBtn.disabled = true;
+    try {
+      await saveToLibrary({ ...opts, text: fileText(opts.path), dropLocal: [file.path] });
+      await done(original.id, `Hoja subida a ${label}`);
     } catch (e) {
       console.error(e);
-      toast('No se pudo guardar: ' + (e.message || e));
       saveBtn.disabled = false;
+      msg.className = 'form-msg error';
+      msg.textContent = 'No se pudo subir: ' + libraryErrorText(e, 'la hoja');
     }
   }
 
@@ -630,6 +727,7 @@ export function DrumEditorView({ id, query }) {
     fields,
     h('div.items-head', h('h3.section-title', 'Partitura'), modeSeg),
     pane,
+    saveTarget.el,
     msg,
     h(
       'div.item-actions',

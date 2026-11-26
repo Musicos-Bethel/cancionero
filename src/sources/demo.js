@@ -113,6 +113,16 @@ export const demoSource = {
     await db.demoRemotePut({ path, text: '', etag: newEtag(), deleted: true, at: Date.now() });
   },
 
+  /** Canciones creadas o editadas con los editores (como en OneDrive). */
+  canWriteSongs: true,
+  writeSong(path, text, opts) {
+    return this.writeText(path, text, opts);
+  },
+  /** Solo para sustituir un .txt por su versión .pro al guardarlo desde el editor. */
+  removeSong(path, opts) {
+    return this.remove(path, opts);
+  },
+
   // ---- Solo demostración
   /** Simula que otra persona cambia una lista (para probar los conflictos). */
   async simulateOtherEdit(path) {

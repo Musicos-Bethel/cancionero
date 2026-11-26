@@ -133,10 +133,39 @@ test('permiso insuficiente (sesión con los permisos antiguos)', async () => {
   const forbidden = async () => ({ ok: false, status: 403, json: async () => ({ error: { code: 'accessDenied' } }) });
   const src = createOneDriveSource({ fetchFn: forbidden, token: async () => 't', isOnline: () => true, target: { location: 'appFolder', listsFolder: 'Listas', leaderFile: 'ajustes-lider.json', songs: true } });
   await assert.rejects(src.removeSong('Himnos/x.cho'), PermissionError);
+  await assert.rejects(src.writeSong('Himnos/x.cho', 'x'), PermissionError);
 });
 
 test('borrar una canción de varias imágenes borra su carpeta', async () => {
   const { deletionPaths } = await import('../src/library/library.js');
   assert.deepEqual(deletionPaths({ kind: 'imageset', paths: ['Partituras batería/Santo/1.png', 'Partituras batería/Santo/2.png'] }), ['Partituras batería/Santo']);
   assert.deepEqual(deletionPaths({ kind: 'pdf', paths: ['Partituras batería/Santo.pdf'] }), ['Partituras batería/Santo.pdf']);
+});
+
+test('crear y guardar canciones en la carpeta del cancionero (editores)', async () => {
+  const d = fakeDrive({ 'Cancionero/Himnos/Viejo.pro': '{title: Viejo}' }, { app: { 'Listas/Domingo.txt': 'l' } });
+  const target = { location: 'appFolder', listsFolder: 'Listas', leaderFile: 'ajustes-lider.json', songs: true };
+  const layout = { root: 'Cancionero', voces: '', bateria: 'Partituras batería', metales: 'Metales', enlaces: 'Enlaces' };
+  const src = make(d, layout, { target });
+  assert.equal(src.canWriteSongs, true);
+  // Nueva: en la carpeta elegida, sin sobrescribir otra con el mismo nombre
+  const { etag } = await src.writeSong('Himnos/Nueva.pro', '{title: Nueva}', { ifNoneMatch: '*' });
+  assert.equal(d.all['root/Cancionero/Himnos/Nueva.pro'], '{title: Nueva}');
+  assert.equal(etag, d.etags.get('root/Cancionero/Himnos/Nueva.pro'));
+  await assert.rejects(src.writeSong('Himnos/Nueva.pro', 'otra', { ifNoneMatch: '*' }), (e) => e instanceof ConflictError && e.reason === 'exists');
+  await src.writeSong('Partituras batería/Ritmo.pro', 'b', { ifNoneMatch: '*' });
+  assert.equal(d.all['root/Cancionero/Partituras batería/Ritmo.pro'], 'b');
+  // Editar: solo si nadie la ha cambiado desde la última actualización
+  const v1 = d.etags.get('root/Cancionero/Himnos/Viejo.pro');
+  await src.writeSong('Himnos/Viejo.pro', 'v2', { ifMatch: v1 });
+  await assert.rejects(src.writeSong('Himnos/Viejo.pro', 'v3', { ifMatch: v1 }), (e) => e instanceof ConflictError && e.reason === 'changed');
+  assert.equal(d.all['root/Cancionero/Himnos/Viejo.pro'], 'v2');
+  // Ni listas ni archivos que no sean de texto por este camino
+  await assert.rejects(src.writeSong('Listas/Domingo.txt', 'x'), /no puede escribir/);
+  await assert.rejects(src.writeSong('Himnos/a.pdf', 'x'), /no puede escribir/);
+  assert.equal(d.all['app/Listas/Domingo.txt'], 'l');
+  // Sin el permiso: no se ofrece
+  const sinPermiso = make(d, layout, { target: { ...target, songs: false } });
+  assert.equal(sinPermiso.canWriteSongs, false);
+  await assert.rejects(sinPermiso.writeSong('Himnos/b.pro', 'x'), /no puede escribir/);
 });
