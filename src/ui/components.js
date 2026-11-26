@@ -1,7 +1,7 @@
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import { state, setSettings } from '../state.js';
-import { SECTION_SHORT, METALES, isMetal } from '../library/library.js';
+import { SECTION_SHORT, SECTIONS, isMetal } from '../library/library.js';
 import { longDate, relativeDay, plural, shortDate } from './format.js';
 import { BRAND } from '../config.js';
 import { parseKey } from '../music/chords.js';
@@ -21,47 +21,72 @@ export function displayKey(k) {
 export const link = (path) => '#' + path;
 
 /**
- * Selector Voces | Batería | Metales (control segmentado de cristal). Con
- * Metales aparece debajo la elección del instrumento (Saxofón | Trompeta); se
- * recuerda el último instrumento elegido.
+ * Selector de sección compacto para la barra superior: un botón «Voces ⌄» que
+ * abre un menú (Voces, Batería, Saxofón, Trompeta). Ocupa una sola línea en
+ * lugar del control segmentado bajo el título.
  */
-export function sectionSwitch() {
+export function sectionPicker() {
   const current = state.settings.section;
-  const metal = isMetal(current) ? current : state.settings.metal || METALES[0];
-  const tabs = [
-    ['voces', 'Voces'],
-    ['bateria', 'Batería'],
-    [metal, 'Metales'],
-  ];
-  const seg = (items, label, isOn) => {
-    const el = h('div.segmented.glass-seg', { role: 'tablist', 'aria-label': label });
-    for (const [id, text] of items) {
-      const on = isOn(id);
-      el.append(
-        h(
-          'button',
-          {
-            type: 'button',
-            role: 'tab',
-            'aria-selected': String(on),
-            class: on ? 'on' : '',
-            onclick: () => current !== id && setSettings(isMetal(id) ? { section: id, metal: id } : { section: id }),
-          },
-          h('span', text),
-        ),
-      );
-    }
-    return el;
-  };
-  const main = seg(tabs, 'Sección', (id) => (isMetal(id) ? isMetal(current) : current === id));
-  if (!isMetal(current)) return main;
-  const sub = seg(
-    METALES.map((m) => [m, SECTION_SHORT[m]]),
-    'Instrumento de metal',
-    (id) => current === id,
+  const btn = h(
+    'button.glass-btn.section-pick',
+    { type: 'button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-label': `Sección: ${SECTION_SHORT[current]}. Cambiar` },
+    h('span', SECTION_SHORT[current]),
+    icon('chevDown', { size: 16 }),
   );
-  sub.classList.add('small', 'sub-seg');
-  return h('div.section-switch', main, sub);
+  btn.onclick = () => (btn.getAttribute('aria-expanded') === 'true' ? closePicker() : openPicker(btn, current));
+  return btn;
+}
+
+let openMenu = null;
+function closePicker() {
+  if (!openMenu) return;
+  const { menu, btn, off } = openMenu;
+  openMenu = null;
+  off();
+  menu.remove();
+  btn.setAttribute('aria-expanded', 'false');
+}
+function openPicker(btn, current) {
+  closePicker();
+  const choose = (id) => {
+    closePicker();
+    if (id !== current) setSettings(isMetal(id) ? { section: id, metal: id } : { section: id });
+  };
+  const menu = h(
+    'div.pick-menu',
+    { role: 'menu', 'aria-label': 'Sección' },
+    SECTIONS.map((id) =>
+      h(
+        'button.pick-item',
+        { type: 'button', role: 'menuitemradio', 'aria-checked': String(id === current), onclick: () => choose(id) },
+        h('span', SECTION_SHORT[id]),
+        id === current ? icon('check', { size: 18 }) : null,
+      ),
+    ),
+  );
+  const r = btn.getBoundingClientRect();
+  menu.style.top = `${Math.round(r.bottom + 8)}px`;
+  menu.style.right = `${Math.max(8, Math.round(document.documentElement.clientWidth - r.right))}px`;
+  document.body.append(menu);
+  btn.setAttribute('aria-expanded', 'true');
+  const outside = (e) => !menu.contains(e.target) && !btn.contains(e.target) && closePicker();
+  const key = (e) => e.key === 'Escape' && (closePicker(), btn.focus());
+  const later = setTimeout(() => document.addEventListener('pointerdown', outside, true));
+  document.addEventListener('keydown', key);
+  window.addEventListener('hashchange', closePicker);
+  window.addEventListener('scroll', closePicker, { passive: true });
+  openMenu = {
+    menu,
+    btn,
+    off: () => {
+      clearTimeout(later);
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('keydown', key);
+      window.removeEventListener('hashchange', closePicker);
+      window.removeEventListener('scroll', closePicker);
+    },
+  };
+  menu.querySelector('[aria-checked="true"]')?.focus();
 }
 
 export function brandMark() {

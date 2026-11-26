@@ -1,7 +1,7 @@
 import { h } from '../ui/dom.js';
 import { goBackTo } from '../nav.js';
 import { state } from '../state.js';
-import { link, listCard, emptyState, pageHeader, songRow, displayKey, pendingChip, sectionSwitch } from '../ui/components.js';
+import { link, listCard, emptyState, pageHeader, songRow, displayKey, pendingChip } from '../ui/components.js';
 import { todayISO } from '../util/text.js';
 import { resolveItem, SECTION_LABEL, missingPartLabel } from '../library/library.js';
 import { longDate, relativeDay, plural } from '../ui/format.js';
@@ -123,7 +123,6 @@ export function ListDetailView({ id }) {
       h('h1', list.name, list.pending ? pendingChip(list.pending.status) : null),
       h('p.page-sub', rel ? h('strong.accent', rel + ' · ') : null, longDate(list.date), list.time ? ` · ${list.time}` : '', list.place ? ` · ${list.place}` : ''),
       list.notes ? h('p.list-notes', list.notes) : null,
-      sectionSwitch(),
     ),
     h(
       'div.actions',
@@ -156,5 +155,5 @@ export function ListDetailView({ id }) {
         )
       : emptyState('Lista sin canciones', leader ? 'Pulsa «Editar» para añadirlas.' : null),
   );
-  return { el };
+  return { el, sectionPicker: true };
 }

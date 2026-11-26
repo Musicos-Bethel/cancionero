@@ -12,13 +12,13 @@ líder de banda; ambos son propietarios de la organización.
 
 ## Qué hace
 
-- **Tres secciones:** *Voces e instrumentos*, *Batería* y *Metales*. En Metales hay un segundo selector, *Saxofón* | *Trompeta*. Se cambia con el selector de arriba.
-- **Listas por evento** («Culto dominical», «Pascua»…) con fecha. La del próximo evento aparece destacada al abrir la app. Cada lista muestra la parte de cada sección de las mismas canciones; si un instrumento no tiene partitura de una canción, se abre la de voces con un aviso.
+- **Tres secciones:** *Voces e instrumentos*, *Batería* y *Metales*. Se cambia con el botón de la barra superior («Voces ⌄»), que abre un menú: Voces, Batería, Saxofón y Trompeta. Está en Culto, Canciones y en cada lista.
+- **Listas por evento** («Culto dominical», «Pascua»…) con fecha. La pantalla de inicio (pestaña *Culto*) es el próximo evento: su nombre en grande, «Empezar el culto», sus canciones con el tempo y el tono de la lista en un recuadro dorado, y los eventos siguientes en «Después». Si no hay ninguno próximo, sale «Inicio» con los accesos al cancionero. Cada lista muestra la parte de cada sección de las mismas canciones; si un instrumento no tiene partitura de una canción, se abre la de voces con un aviso.
 - **Metales con transposición:** saxofón y trompeta leen en otro tono que el de concierto. La app pasa el tono de la lista al tono escrito del instrumento (ver «Metales»).
 - **ChordPro:** acordes encima de la letra, coros destacados, comentarios, tablaturas o ritmos de batería, tempo y compás.
 - **Archivos `.txt`** con acordes encima de la letra: se convierten automáticamente.
 - **Transponer** ± semitonos y **capo** (muestra las formas que se tocan y el tono que suena), en notación **americana (C D E)** o **latina (Do Re Mi)**. Se recuerda por canción y por lista.
-- **Solo letra** para cantantes, **tamaño de letra**, **modo oscuro**.
+- **Solo letra** para cantantes (en «Más» de la canción y en Ajustes), **tamaño de letra**, **modo oscuro**.
 - **PDF e imágenes página a página.** Deslizando a la izquierda pasas a la página siguiente; desde la última, a la siguiente canción de la lista (y al revés). Muestra la página (1/3) y avisa de cuál es la siguiente canción. El pellizco con dos dedos solo hace zoom. También hay vista *Continuo* con desplazamiento automático.
 - **Botón «atrás»:** el de la app y el de Android (o el gesto de iPhone) llevan al mismo sitio. Al guardar o cancelar en un editor se vuelve a la pantalla de antes sin dejar el editor en el historial, así que no hay bucles.
 - **Deslizar entre canciones** de una lista también en las de texto: solo un gesto claramente horizontal, sin estorbar el desplazamiento ni la selección de texto.
@@ -26,7 +26,7 @@ líder de banda; ambos son propietarios de la organización.
 - **Desplazamiento automático** con velocidad ajustable. Un toque en la partitura muestra u oculta los controles.
   - Si la canción tiene duración (`{time: 6:58}` de SongBook), empieza en **Auto**: la velocidad se calcula para recorrerla entera en ese tiempo. En «Más» se puede volver a Auto.
   - Cada canción recuerda su velocidad en el dispositivo, y la última elegida es la inicial de las demás (no vuelve a un valor fijo, como hace SongBook en el iPad).
-- **Metrónomo** (botón junto a «Escuchar»): suena al tempo de la canción (`{metronome}` o `{tempo}`; en una partitura PDF, el de su canción de voces) y marca el primer tiempo del compás. Se ajusta con − y + y cada canción recuerda su tempo. Un punto dorado marca el pulso aunque se oculten los controles. Funciona sin conexión; en iPhone no suena con el interruptor de silencio puesto.
+- **Metrónomo** (en la barra de abajo de la canción, con el tempo a la vista y un punto que late): suena al tempo de la canción (`{metronome}` o `{tempo}`; en una partitura PDF, el de su canción de voces) y marca el primer tiempo del compás. Se ajusta con − y + y cada canción recuerda su tempo. Un punto dorado marca el pulso aunque se oculten los controles. Funciona sin conexión; en iPhone no suena con el interruptor de silencio puesto.
 - **Pedal Bluetooth:** AvPág/↓ baja la pantalla (al final pasa a la siguiente canción de la lista), RePág/↑ sube, →/← cambian de canción, Espacio inicia o pausa el desplazamiento. En PDF/imágenes, el pedal pasa página y después canción. Las teclas se pueden cambiar en Ajustes.
 - **Categorías** en Canciones, con su número de canciones (ver más abajo).
 - **Escuchar:** cada canción puede tener su enlace (YouTube se abre en su app si está instalada), y cada lista tiene «Escuchar la lista» para preparar el ensayo.
@@ -346,9 +346,11 @@ Estilo iOS sobrio, con «liquid glass»:
 - **Dorado solo como acento:** `#DDA60D` en rellenos (punto del próximo culto, «Empezar», desplazamiento) y
   `#8A6400` en texto y acordes. En oscuro: negro puro, tarjetas `#1C1C1E` y acento `#E8B630`.
 - **Cristal:**
-  - La barra de pestañas es una cápsula flotante de cristal.
-  - En la canción no hay barras fijas: volver, título, Escuchar/Más y los controles (tono, tamaño, solo
-    letra) flotan sobre la letra. Se ocultan al desplazar hacia abajo y vuelven al tocar o al subir.
+  - La barra de pestañas es una cápsula flotante de cristal, compacta (Culto, Canciones, Listas, Ajustes).
+  - El selector de sección es un botón de cristal en la barra superior («Voces ⌄») con un menú; al desplazar,
+    el título pequeño se coloca junto al logo para no tocarlo.
+  - En la canción no hay barras fijas: volver, título, Escuchar/Más y los controles (tono, tamaño de letra y
+    metrónomo con el tempo) flotan sobre la letra. «Solo letra» está en «Más». Se ocultan al desplazar hacia abajo y vuelven al tocar o al subir.
   - El desplazamiento automático es un botón dorado redondo. Capo, velocidad, tamaño de letra, pantalla
     completa y la otra versión están en «Más».
 - **Fondos sólidos equivalentes** sustituyen al cristal si el sistema tiene «Reducir transparencia», si el
@@ -473,6 +475,7 @@ avisado al líder de banda; queda probar lo último en dispositivos reales (ver 
 | — | Secciones «Outro» y «Cierre» en los editores | Publicada (PR #21) |
 | 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Publicada (PR #22, 26/11/2026) |
 | — | README y pasos para empezar una sesión nueva | Publicada (PR #23) |
+| — | Inicio centrado en el próximo culto, selector de sección compacto, barras de abajo más claras | En revisión (PR #24) |
 
 ### Dispositivos antiguos
 

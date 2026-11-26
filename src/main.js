@@ -9,7 +9,7 @@ import { h, clear } from './ui/dom.js';
 import { icon } from './ui/icons.js';
 import { toast } from './ui/toast.js';
 import { state, subscribe, loadSettings, reloadLibrary, runSync, setOnline } from './state.js';
-import { brandMark, link } from './ui/components.js';
+import { brandMark, link, sectionPicker } from './ui/components.js';
 import { applyGlass } from './features/glass.js';
 import { setupInstall } from './features/install.js';
 import { exitImmersive } from './features/immersive.js';
@@ -45,12 +45,14 @@ const appbarSync = h('button.glass-btn.circle.sync-btn', { 'aria-label': 'Actual
 const offlineBadge = h('span.offline-badge', { hidden: true, title: 'Sin conexión' }, icon('wifiOff', { size: 16 }), h('span', 'Sin conexión'));
 // Título pequeño que aparece en la barra al desplazar (como en iOS).
 const compactTitle = h('div.appbar-title', { 'aria-hidden': 'true' });
-const appbar = h('header.appbar', h('div.appbar-inner', brandMark(), compactTitle, h('div.appbar-actions', offlineBadge, appbarSync)));
+// Selector de sección (Voces ⌄) en las pantallas que dependen de ella.
+const sectionSlot = h('div.section-slot');
+const appbar = h('header.appbar', h('div.appbar-inner', brandMark(), compactTitle, h('div.appbar-actions', offlineBadge, sectionSlot, appbarSync)));
 const progress = h('div.progress', { hidden: true }, h('div.progress-bar'));
 const main = h('main#view', { tabindex: '-1' });
 
 const TABS = [
-  ['/', 'Inicio', 'home'],
+  ['/', 'Culto', 'home'],
   ['/canciones', 'Canciones', 'music'],
   ['/listas', 'Listas', 'list'],
   ['/ajustes', 'Ajustes', 'settings'],
@@ -177,6 +179,8 @@ function route() {
   document.body.classList.toggle('song-mode', !!view.fullscreen);
   document.body.classList.toggle('editor-mode', isEditor(view));
   clear(main).append(view.el);
+  sectionSlot.replaceChildren(...(view.sectionPicker ? [sectionPicker()] : []));
+  document.body.classList.toggle('has-section-pick', !!view.sectionPicker);
   watchLargeTitle(view);
 
   const tabPath = '/' + (parts[0] === 'lista' ? 'listas' : parts[0] === 'editor' ? 'canciones' : parts[0] === 'cancion' ? '' : parts[0] ?? '');

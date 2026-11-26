@@ -21,7 +21,7 @@ import { openListen } from '../features/listen.js';
 import { attachSongSwipe } from '../features/swipe.js';
 import { enterImmersive, exitImmersive, isImmersive, onImmersiveChange } from '../features/immersive.js';
 import { ensureBlob } from '../sync/sync.js';
-import { link, emptyState, prettyKey } from '../ui/components.js';
+import { link, emptyState, prettyKey, displayKey } from '../ui/components.js';
 import { isLeader } from '../leader/leader.js';
 import { canDeleteSong, deleteSong, listsUsing } from '../library/delete-song.js';
 import { ConflictError, OfflineError, PermissionError, LoginRequiredError } from '../sources/errors.js';
@@ -143,7 +143,10 @@ export function SongView({ section, id, query, backHref }) {
     icon('headphones', { size: 21 }),
   );
   const moreBtn = h('button.cap-btn', { 'aria-label': 'Más opciones', onclick: () => moreSheet() }, icon('more', { size: 21 }));
-  const metroBtn = h('button.cap-btn.metro-btn', { 'aria-label': 'Metrónomo', 'aria-pressed': 'false', title: 'Metrónomo', onclick: () => metro.toggle() }, icon('metronome', { size: 21 }));
+  // Metrónomo en la barra de abajo: muestra el tempo y un punto que late.
+  const miniDot = h('span.mini-beat', { 'aria-hidden': 'true' });
+  const metroBpm = h('span.metro-bpm');
+  const metroBtn = h('button.cap-btn.text-btn.metro-btn', { 'aria-label': 'Metrónomo', 'aria-pressed': 'false', title: 'Metrónomo', onclick: () => metro.toggle() }, miniDot, metroBpm);
   const notes = h(
     'div.float-notes',
     fallback ? h('div.note-pill.warn', icon('alert', { size: 15 }), `${missingPartLabel(ver || state.settings.section)}: se muestra la de voces`) : null,
@@ -151,7 +154,7 @@ export function SongView({ section, id, query, backHref }) {
   );
   const topFloat = h(
     'div.float-top',
-    h('div.float-row', h('a.glass-btn.circle', { href: back, 'aria-label': 'Volver', onclick: (e) => (e.preventDefault(), goBackTo(back)) }, icon('back', { size: 22 })), centerCap, h('div.glass-cap', metroBtn, listenBtn, moreBtn)),
+    h('div.float-row', h('a.glass-btn.circle', { href: back, 'aria-label': 'Volver', onclick: (e) => (e.preventDefault(), goBackTo(back)) }, icon('back', { size: 22 })), centerCap, h('div.glass-cap', listenBtn, moreBtn)),
     notes,
   );
 
@@ -165,7 +168,11 @@ export function SongView({ section, id, query, backHref }) {
     speedValue,
     h('button.cap-btn', { 'aria-label': 'Más rápido', onclick: () => setSpeed(1) }, icon('plus', { size: 18 })),
   );
-  const nextPill = list && next ? h('button.glass-cap.next-pill', { onclick: () => go(next) }, h('span', 'Siguiente: ', h('strong', next.song.title)), icon('next', { size: 15 })) : null;
+  // Tono de la siguiente canción (el de la lista, de concierto; no en metales, que leen en otro tono).
+  const nextKey = next && !isMetal(ver || state.settings.section) && list.items[next.index]?.key ? displayKey(list.items[next.index].key) : '';
+  const nextPill = list && next
+    ? h('button.glass-cap.next-pill', { onclick: () => go(next) }, h('span', 'Siguiente: ', h('strong', next.song.title), nextKey ? ` · ${nextKey}` : ''), icon('next', { size: 15 }))
+    : null;
   const bpmValue = h('span.cap-value.bpm-value');
   const beatDot = h('span.beat-dot', { 'aria-hidden': 'true' });
   const metroCap = h(
@@ -192,7 +199,7 @@ export function SongView({ section, id, query, backHref }) {
     pulse,
   );
   const setControls = (...groups) => {
-    const parts = groups.filter(Boolean);
+    const parts = [...groups, metroBtn].filter(Boolean);
     controls.replaceChildren(...parts.flatMap((g, i) => (i ? [h('span.cap-sep'), g] : [g])));
   };
 
@@ -259,23 +266,27 @@ export function SongView({ section, id, query, backHref }) {
     bpm: timing.bpm ?? 100,
     beats: timing.beats,
     onBeat: (b) => {
-      for (const el of [beatDot, pulse]) {
+      for (const el of [beatDot, pulse, miniDot]) {
         el.classList.remove('on', 'accent');
         void el.offsetWidth;
         el.classList.add('on');
         if (b === 0) el.classList.add('accent');
       }
       clearTimeout(pulseTimer);
-      pulseTimer = setTimeout(() => [beatDot, pulse].forEach((el) => el.classList.remove('on', 'accent')), 120);
+      pulseTimer = setTimeout(() => [beatDot, pulse, miniDot].forEach((el) => el.classList.remove('on', 'accent')), 120);
     },
     onChange: (m) => {
       bpmValue.textContent = `${m.bpm} bpm`;
+      metroBpm.textContent = String(m.bpm);
+      metroBtn.setAttribute('aria-label', `Metrónomo, ${m.bpm} pulsaciones por minuto`);
       metroBtn.classList.toggle('on', m.running);
       metroBtn.setAttribute('aria-pressed', String(m.running));
       screen.classList.toggle('metro-on', m.running);
     },
   });
   bpmValue.textContent = `${metro.bpm} bpm`;
+  metroBpm.textContent = String(metro.bpm);
+  metroBtn.setAttribute('aria-label', `Metrónomo, ${metro.bpm} pulsaciones por minuto`);
   const setBpm = (d) => {
     metro.setBpm(metro.bpm + d);
     db.prefPatch(song.key, { bpm: metro.bpm });
@@ -552,14 +563,17 @@ export function SongView({ section, id, query, backHref }) {
       draw();
     };
 
-    const lyricsBtn = h(
-      'button.cap-btn.text-btn',
-      {
-        'aria-pressed': String(state.settings.lyricsOnly),
-        onclick: () => setSettings({ lyricsOnly: !state.settings.lyricsOnly }),
-      },
-      'Solo letra',
-    );
+    // «Solo letra» está en «Más» (y en Ajustes); la barra de abajo queda para lo del momento.
+    const lyricsRow = () =>
+      h(
+        'div.sheet-row',
+        h('span.sheet-row-label', 'Solo letra'),
+        h(
+          'label.switch',
+          h('input', { type: 'checkbox', checked: state.settings.lyricsOnly, 'aria-label': 'Solo letra', onchange: (e) => setSettings({ lyricsOnly: e.target.checked }) }),
+          h('span.slider'),
+        ),
+      );
     const fontBtn = h('button.cap-btn.text-btn.aa', { 'aria-label': 'Tamaño de letra', 'aria-expanded': 'false', onclick: () => toggleFont() }, h('span.a-small', 'A'), h('span.a-big', 'A'));
     const fontCap = h(
       'div.glass-cap.font-cap',
@@ -581,10 +595,10 @@ export function SongView({ section, id, query, backHref }) {
         ? h('div.cap-group', h('button.cap-btn', { 'aria-label': 'Bajar medio tono', onclick: () => setT(-1) }, icon('minus', { size: 18 })), keyValue, h('button.cap-btn', { 'aria-label': 'Subir medio tono', onclick: () => setT(1) }, icon('plus', { size: 18 })))
         : null,
       fontBtn,
-      hasChords ? lyricsBtn : null,
     );
     goldBtn.hidden = false;
     if (hasChords) {
+      moreRows.push(lyricsRow);
       moreRows.push((stepperRow) => stepperRow('Capo', () => (capo ? `Traste ${capo}` : 'Sin capo'), () => setCapo(-1), () => setCapo(1)));
     }
     moreRows.push((stepperRow) => stepperRow('Tamaño de letra', () => Math.round(state.settings.fontScale * 100) + '%', () => setFont(-0.1), () => setFont(0.1)));
@@ -593,7 +607,6 @@ export function SongView({ section, id, query, backHref }) {
       if (what !== 'settings') return;
       screen.style.setProperty('--fs', state.settings.fontScale);
       paper.classList.toggle('lyrics-only', state.settings.lyricsOnly && hasChords);
-      lyricsBtn.setAttribute('aria-pressed', String(state.settings.lyricsOnly));
       paintFont();
       draw();
     });

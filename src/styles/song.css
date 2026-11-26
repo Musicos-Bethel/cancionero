@@ -390,7 +390,12 @@ button.cap-value:disabled { cursor: default; }
 .song-screen.paged-mode .next-pill { display: none; }
 
 /* Metrónomo */
-.metro-btn.on { color: var(--accent-ink); background: color-mix(in srgb, var(--gold) 22%, transparent); border-radius: 50%; }
+.metro-btn { gap: 7px; font-variant-numeric: tabular-nums; }
+.metro-btn .mini-beat { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); opacity: 0.55; transition: transform 0.12s ease-out, opacity 0.12s ease-out; }
+.metro-btn.on { color: var(--accent-ink); font-weight: 600; }
+.metro-btn.on .mini-beat { opacity: 0.8; }
+.metro-btn .mini-beat.on { opacity: 1; transform: scale(1.35); box-shadow: 0 0 8px var(--gold); }
+.metro-btn .mini-beat.accent { transform: scale(1.7); }
 .metro-cap { display: none; height: 44px; border-radius: 22px; align-items: center; padding-left: 14px; }
 .song-screen.metro-on .metro-cap { display: inline-flex; }
 .bpm-value { min-width: 72px; text-align: center; }
@@ -416,5 +421,5 @@ button.cap-value:disabled { cursor: default; }
 }
 .song-screen.metro-on.chrome-hidden .metro-pulse { display: block; }
 @media (prefers-reduced-motion: reduce) {
-  .beat-dot, .metro-pulse { transition: none; }
+  .beat-dot, .metro-pulse, .metro-btn .mini-beat { transition: none; }
 }

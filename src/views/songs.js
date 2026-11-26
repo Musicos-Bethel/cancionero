@@ -2,7 +2,7 @@ import { h, clear } from '../ui/dom.js';
 import { icon } from '../ui/icons.js';
 import { state } from '../state.js';
 import { searchSongs, categoriesOf, SECTION_LABEL, SECTIONS, ALL } from '../library/library.js';
-import { link, songRow, emptyState, pageHeader, displayKey, sectionSwitch } from '../ui/components.js';
+import { link, songRow, emptyState, pageHeader, displayKey } from '../ui/components.js';
 import { plural } from '../ui/format.js';
 import { isLeader } from '../leader/leader.js';
 
@@ -102,7 +102,7 @@ export function SongsView({ query }) {
   }
 
   el.append(
-    pageHeader('Canciones', null, sectionSwitch()),
+    pageHeader('Canciones'),
     isLeader() && (section === 'voces' || section === 'bateria')
       ? h(
           'div.leader-tools',
@@ -119,5 +119,5 @@ export function SongsView({ query }) {
   );
   renderChips();
   render();
-  return { el, focus: () => !input.value && matchMedia('(hover: hover)').matches && input.focus() };
+  return { el, sectionPicker: true, focus: () => !input.value && matchMedia('(hover: hover)').matches && input.focus() };
 }
