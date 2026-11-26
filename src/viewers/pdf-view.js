@@ -7,7 +7,8 @@ let pdfjsPromise;
 function loadPdfjs() {
   pdfjsPromise ??= Promise.all([
     import('pdfjs-dist/legacy/build/pdf.min.mjs'),
-    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
+    // Worker propio: carga los parches de compatibilidad antes que pdf.js.
+    import('./pdf-worker.js?worker&url'),
   ]).then(([pdfjs, worker]) => {
     pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
     return pdfjs;

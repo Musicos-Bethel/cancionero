@@ -42,6 +42,10 @@ App publicada: https://musicos-bethel.github.io/cancionero/
   respetan sus directivas: autor en `{subtitle}`, tempo en `{metronome}`, duración en `{time: m:ss}`
   (no es el compás), `{soh}…{eoh}` y `{musicpath}`. El texto escrito en la vista ChordPro del editor
   se guarda tal cual.
+- **Dispositivos antiguos (iOS 16):** no quites `src/util/compat.js` ni el worker propio de pdf.js
+  (`src/viewers/pdf-worker.js`). Al actualizar pdf.js o usar funciones nuevas de JavaScript, busca en
+  `node_modules/pdfjs-dist/legacy/build/` lo que Safari 16 no tenga y añádelo a `compat.js`; para
+  probarlo, abre una partitura PDF en Chromium quitando antes esas funciones (en la página y en el worker).
 - **Navegación:** «atrás» de la app = botón de Android = gesto de iPhone. Para volver usa `goBackTo`
   y para cambiar de pantalla sin apilar, `replaceTo` (`src/nav.js`); no uses `location.hash = …`
   para volver atrás.
