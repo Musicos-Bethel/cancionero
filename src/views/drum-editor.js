@@ -31,7 +31,7 @@ const SUBDIVISIONS = [
   [4, 'Semicorcheas'],
   [6, 'Sextillos'],
 ];
-const SECTION_NAMES = ['Intro', 'Estrofa', 'Pre-coro', 'Coro', 'Puente', 'Interludio', 'Final'];
+const SECTION_NAMES = ['Intro', 'Estrofa', 'Pre-coro', 'Coro', 'Puente', 'Interludio', 'Final', 'Outro', 'Cierre'];
 
 /**
  * Editor de hojas de batería (modo líder): ritmos en cuadrícula (se toca cada
