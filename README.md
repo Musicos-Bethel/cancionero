@@ -407,22 +407,23 @@ GitHub Pages. En cada PR el mismo flujo solo prueba y compila (comprobación `bu
 
 ## Estado y hoja de ruta
 
-**Situación (23/11/2026):** migración terminada. El repositorio está en `Musicos-Bethel/cancionero`, la
-app se publica en https://musicos-bethel.github.io/cancionero/ y `main` está protegida. A partir de ahora se
-trabaja solo con este repositorio. Publicados el editor de batería (PR #11) y la lectura de OneDrive
-(PR #12). Siguiente: probar OneDrive con la biblioteca real y leer las listas de SongBook (`.lst`).
+**Situación (26/11/2026):** la app está publicada en https://musicos-bethel.github.io/cancionero/ y conectada
+a la biblioteca real de OneDrive (carpeta `Cancionero`, cuenta compartida del equipo). `main` está protegida.
+Todo lo hecho hasta ahora está fusionado y publicado; no hay PR abiertos.
 
-### Primeros pasos tras la migración (hechos)
+### Al empezar una sesión nueva
 
-1. **Proteger `main`** (hecho el 23/11/2026): regla `main` en *Settings → Rules → Rulesets*, activa, sobre la
-   rama por defecto, sin lista de *bypass*: sin borrado ni *force push*, cambios solo por PR (0
-   aprobaciones) y comprobación **`build`** obligatoria. La API de las sesiones de Claude no puede crear
-   reglas: si hubiera que cambiarla, se hace desde la web.
-2. **Instrucciones del proyecto de Claude** (hecho el 23/11/2026): actualizadas en claude.ai, proyecto
-   «App.cancionero Iglesia».
-3. **PR #9** (hecho el 23/11/2026): fusionado con la regla ya activa.
-4. **Reinstalar la app:** el líder de banda y Nathanael, desde la dirección nueva (borrar antes el icono
-   antiguo) y restaurar su copia si la exportaron.
+1. Leer este README y `CLAUDE.md` (reglas de desarrollo).
+2. Leer el documento del proyecto de Claude `claude/cancionero-migrado.md` (estado, decisiones y pendientes).
+3. Crear una rama `claude/…` desde `main` actualizada y trabajar una tarea por PR.
+4. Para probar en el navegador: `npm run build` y `npx vite preview --port 4173`; las comprobaciones con
+   Playwright (412 px, tableta y modo oscuro) se hacen sobre esa dirección. Para probar con canciones con
+   la forma de SongBook, importar en *Ajustes* un `.pro` con letra inventada (nunca canciones reales en el
+   repositorio).
+5. Los cambios que pida el líder de banda suelen llegar en vídeos: se extraen fotogramas con `ffmpeg` y se
+   transcribe el audio para sacar la lista de cambios antes de empezar.
+
+### Historial de entregas
 
 | Entrega | Contenido | Estado |
 |---|---|---|
@@ -433,20 +434,32 @@ trabaja solo con este repositorio. Publicados el editor de batería (PR #11) y l
 | — | Editor de canciones de voces | Publicada (PR #5) |
 | — | Logo de la iglesia | Publicada (PR #6) |
 | — | Demostración aprobada por el líder de banda | 17/11/2026 |
-| Migración | Repositorio a la organización de la iglesia | **Hecha (23/11/2026):** repositorio en `Musicos-Bethel`, publicada en la dirección nueva y `main` protegida |
-| 2b | Lectura desde OneDrive; listas y PIN en la carpeta de la app | Publicada (PR #12); en pruebas con la biblioteca real |
-| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Pendiente; las listas ya se escriben (`appFolder`) |
+| Migración | Repositorio a la organización de la iglesia, `main` protegida | Hecha (PR #9, 23/11/2026) |
 | — | Editor de batería (cuadrícula de ritmos y hoja de ruta) | Publicada (PR #11) |
+| 2b | Lectura desde OneDrive; listas y PIN en la carpeta de la app | Publicada (PR #12 y #13) |
+| — | Eliminar canciones de OneDrive desde el modo líder (`Files.ReadWrite`) | Publicada (PR #14, 26/11/2026) |
+| — | Lectura al estilo SongBook (`{soh}`, coros, acordes sin huecos) | Publicada (PR #15) |
+| — | Editor al estilo SongBook (códigos, paleta de acordes, colores) | Publicada (PR #16) |
+| — | Metrónomo y desplazamiento según la duración | Publicada (PR #17) |
+| — | Botón «atrás» coherente con Android, sin bucles | Publicada (PR #18) |
+| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Pendiente (ya hay permiso `Files.ReadWrite`) |
 
-**Pendiente de decidir o confirmar:**
-- La estructura real de carpetas de OneDrive.
-- El PIN real y quién lo tiene.
-- La hora del culto del domingo.
-- Qué saxofón se usa.
-- El orden de las categorías.
-- Si se añade una licencia o una nota de titularidad.
+### Pendiente
 
-## Migración a la organización de la iglesia
+- **Cambios nuevos del líder de banda:** Nathanael los traerá a la próxima sesión.
+- **Probar en móviles reales** (iPhone/iPad de Safari y Samsung/Pixel con Chrome): metrónomo (en iPhone no
+  suena con el interruptor de silencio), botón atrás del Samsung, editor con el teclado del móvil y
+  aceptación del permiso nuevo de Microsoft al entrar.
+- **Listas de SongBook (`.lst`):** leerlas como listas de la app; falta un archivo de ejemplo.
+- **Fase 2c:** guardar en `Cancionero` las canciones y hojas creadas en la app (SongBook también las vería).
+- Decidir si OneDrive pasa a ser el origen por defecto (ahora lo es la demostración).
+- Pendiente de decidir o confirmar con el líder: el PIN y quién lo tiene, la hora del culto del domingo
+  (ahora 11:00), qué saxofón se usa (alto en Mi♭ o tenor en Si♭), el orden de las categorías (ahora
+  alfabético), si el icono de la app pasa a ser el logo y si se añade una licencia o nota de titularidad.
+
+## Migración a la organización de la iglesia (hecha el 23/11/2026)
+
+Se conserva como referencia. Todos los pasos están hechos.
 
 El repositorio se **transfiere** (no se copia) de `dnathanospina` a una organización gratuita de GitHub
 de la iglesia. Se conservan el historial, los PR y el despliegue. La app pasará de
@@ -492,10 +505,8 @@ de la iglesia. Se conservan el historial, los PR y el despliegue. La app pasará
    restaura en la nueva.
 9. **Músicos:** cuando se reparta la app, mensaje con la dirección nueva e instalación (iPhone: Safari →
    Compartir → Añadir a pantalla de inicio; Android: Chrome → Instalar app).
-10. **Después:** el líder de banda registra la app en Microsoft Entra (solo cuentas personales de
-    Microsoft, plataforma SPA, URI = dirección nueva con `/` final; permisos delegados `Files.Read`,
-    `Files.ReadWrite.AppFolder`, `offline_access`) y envía el **Id. de aplicación (cliente)**. No es
-    secreto y puede ir en el código. Entonces empieza la fase 2b.
+10. **Después** (hecho el 23/11/2026): registro en Microsoft Entra y conexión con OneDrive (ver
+    «Conexión con OneDrive»). El 26/11/2026 se añadió el permiso `Files.ReadWrite`.
 
 ### Datos de cada móvil
 Los datos de la PWA van por origen: en la dirección nueva la app arranca vacía. La copia de seguridad
