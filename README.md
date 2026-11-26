@@ -423,21 +423,32 @@ GitHub Pages. En cada PR el mismo flujo solo prueba y compila (comprobación `bu
 
 ## Estado y hoja de ruta
 
-**Situación (26/11/2026):** la app está publicada en https://musicos-bethel.github.io/cancionero/ y conectada
-a la biblioteca real de OneDrive (carpeta `Cancionero`, cuenta compartida del equipo). `main` está protegida.
-Todo lo hecho hasta ahora está fusionado y publicado; no hay PR abiertos.
+**Situación (26/11/2026, noche):** la app está publicada en https://musicos-bethel.github.io/cancionero/
+(versión 1.0.0 del 26/11/2026, se ve al final de *Ajustes*) y conectada a la biblioteca real de OneDrive
+(carpeta `Cancionero`, cuenta compartida del equipo). `main` está protegida. Todo lo hecho está fusionado y
+publicado; no hay PR abiertos. Lo último (26/11): partituras PDF en iPads con iOS 16 (PR #20), secciones
+«Outro» y «Cierre» (PR #21) y crear y guardar canciones en OneDrive desde los editores (PR #22). Ya se ha
+avisado al líder de banda; queda probar lo último en dispositivos reales (ver «Pendiente»).
 
 ### Al empezar una sesión nueva
 
 1. Leer este README y `CLAUDE.md` (reglas de desarrollo).
 2. Leer el documento del proyecto de Claude `claude/cancionero-migrado.md` (estado, decisiones y pendientes).
-3. Crear una rama `claude/…` desde `main` actualizada y trabajar una tarea por PR.
+3. Crear una rama `claude/…` desde `main` actualizada y trabajar una tarea por PR. Si hay varios cambios,
+   uno por PR, y preguntar a Nathanael las decisiones que afecten a todos (OneDrive, publicar, borrar).
 4. Para probar en el navegador: `npm run build` y `npx vite preview --port 4173`; las comprobaciones con
    Playwright (412 px, tableta y modo oscuro) se hacen sobre esa dirección. Para probar con canciones con
    la forma de SongBook, importar en *Ajustes* un `.pro` con letra inventada (nunca canciones reales en el
    repositorio).
 5. Los cambios que pida el líder de banda suelen llegar en vídeos: se extraen fotogramas con `ffmpeg` y se
    transcribe el audio para sacar la lista de cambios antes de empezar.
+6. Modo líder en la demostración: PIN `123456`. En la demostración, «OneDrive» es una OneDrive simulada
+   dentro del dispositivo: se puede probar crear, editar y borrar sin tocar la biblioteca real.
+7. PR desde las sesiones de Claude: `gh pr create` no funciona (GraphQL bloqueado). Abrir con
+   `gh api repos/Musicos-Bethel/cancionero/pulls -f title=… -f head=… -f base=main -F body=@archivo` y
+   fusionar (solo cuando Nathanael lo pida) con
+   `gh api -X PUT repos/Musicos-Bethel/cancionero/pulls/N/merge -f merge_method=squash`.
+8. Al terminar una tarea: actualizar este README (historial y pendientes) y el documento del proyecto.
 
 ### Historial de entregas
 
@@ -458,8 +469,10 @@ Todo lo hecho hasta ahora está fusionado y publicado; no hay PR abiertos.
 | — | Editor al estilo SongBook (códigos, paleta de acordes, colores) | Publicada (PR #16) |
 | — | Metrónomo y desplazamiento según la duración | Publicada (PR #17) |
 | — | Botón «atrás» coherente con Android, sin bucles | Publicada (PR #18) |
-| — | Partituras PDF en iPhone/iPad con iOS 16 y 17 (parches de compatibilidad) | En revisión |
-| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | En revisión |
+| — | Partituras PDF en iPhone/iPad con iOS 16 y 17 (parches de compatibilidad) | Publicada (PR #20) |
+| — | Secciones «Outro» y «Cierre» en los editores | Publicada (PR #21) |
+| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Publicada (PR #22, 26/11/2026) |
+| — | README y pasos para empezar una sesión nueva | Publicada (PR #23) |
 
 ### Dispositivos antiguos
 
@@ -470,13 +483,20 @@ pdf.js 6 usa funciones que Safari 16–17.3 no trae (`Promise.withResolvers`, `R
 
 ### Pendiente
 
-- **Cambios nuevos del líder de banda:** Nathanael los traerá a la próxima sesión.
+- **Cambios nuevos:** Nathanael y el líder de banda tienen más; los traerán a la próxima sesión.
+- **Probar lo publicado el 26/11 en real:**
+  - Partituras PDF en el iPad con iOS 16.7.16 (y comprobar que no tiene instalada la app de la dirección
+    antigua).
+  - Con la OneDrive real: crear una canción de prueba con letra inventada en una carpeta, editarla, ver que
+    SongBook la abre y borrarla desde la app. Subir a OneDrive las canciones «Local» que ya creó el líder.
 - **Probar en móviles reales** (iPhone/iPad de Safari y Samsung/Pixel con Chrome): metrónomo (en iPhone no
   suena con el interruptor de silencio), botón atrás del Samsung, editor con el teclado del móvil y
   aceptación del permiso nuevo de Microsoft al entrar.
 - **Listas de SongBook (`.lst`):** leerlas como listas de la app; falta un archivo de ejemplo.
-- **Fase 2c:** probar con la OneDrive real (crear, editar y subir una canción de prueba) y comprobar que
-  SongBook la ve.
+- **Propuesta sin aprobar:** apartado «Diagnóstico» en *Ajustes* que guarde los errores de la app y deje
+  copiarlos (para que los músicos manden el texto exacto de un fallo).
+- **Editor de batería:** seguir mejorándolo (escuchar el ritmo con el metrónomo, pentagrama real, varios
+  compases por ritmo).
 - Decidir si OneDrive pasa a ser el origen por defecto (ahora lo es la demostración).
 - Pendiente de decidir o confirmar con el líder: el PIN y quién lo tiene, la hora del culto del domingo
   (ahora 11:00), qué saxofón se usa (alto en Mi♭ o tenor en Si♭), el orden de las categorías (ahora
