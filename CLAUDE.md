@@ -23,7 +23,7 @@ App publicada: https://musicos-bethel.github.io/cancionero/
   ni rótulos en mayúsculas.
 - **Diseño:** estilo iOS con cristal (ver «Diseño» en el README). El dorado es solo un acento. La
   interfaz debe funcionar igual en iPhone (Safari) y Android (Chrome), móvil y tablet.
-- **Tecnología:** JavaScript sin framework, Vite, vite-plugin-pwa, IndexedDB (idb), pdf.js y Vitest.
+- **Tecnología:** JavaScript sin framework, Vite, vite-plugin-pwa, IndexedDB (idb), pdf.js y pruebas con `node:test` (`npm test`).
   No añadas dependencias sin una buena razón.
 - **Repositorio público:** nunca subas canciones reales, correos ni datos de la iglesia. La demostración
   (`public/demo/`) solo lleva himnos de dominio público y arreglos propios. El correo de la cuenta de
@@ -38,6 +38,15 @@ App publicada: https://musicos-bethel.github.io/cancionero/
   - Pasa `npm test` y `npm run build`.
   - Comprueba en Chrome móvil emulado (412 px, Playwright) que la página no se ensancha
     (`scrollWidth == clientWidth`) y que no hay errores en la consola.
+- **Compatibilidad con SongBook:** la biblioteca real se edita también con SongBook. Al guardar se
+  respetan sus directivas: autor en `{subtitle}`, tempo en `{metronome}`, duración en `{time: m:ss}`
+  (no es el compás), `{soh}…{eoh}` y `{musicpath}`. El texto escrito en la vista ChordPro del editor
+  se guarda tal cual.
+- **Navegación:** «atrás» de la app = botón de Android = gesto de iPhone. Para volver usa `goBackTo`
+  y para cambiar de pantalla sin apilar, `replaceTo` (`src/nav.js`); no uses `location.hash = …`
+  para volver atrás.
+- **Pruebas con canciones:** solo con letra inventada (nunca canciones reales en `tests/` ni en
+  capturas que se suban).
 - **No hay que tocar:**
   - Los tonos de listas y voces son de concierto; los metales se transportan
     (`writtenOffset` en `src/library/library.js`).
