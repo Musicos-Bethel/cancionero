@@ -442,7 +442,15 @@ Todo lo hecho hasta ahora está fusionado y publicado; no hay PR abiertos.
 | — | Editor al estilo SongBook (códigos, paleta de acordes, colores) | Publicada (PR #16) |
 | — | Metrónomo y desplazamiento según la duración | Publicada (PR #17) |
 | — | Botón «atrás» coherente con Android, sin bucles | Publicada (PR #18) |
+| — | Partituras PDF en iPhone/iPad con iOS 16 y 17 (parches de compatibilidad) | En revisión |
 | 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Pendiente (ya hay permiso `Files.ReadWrite`) |
+
+### Dispositivos antiguos
+
+La app funciona en iPhone/iPad desde **iOS 16** (Safari 16) y en Android con Chrome reciente.
+pdf.js 6 usa funciones que Safari 16–17.3 no trae (`Promise.withResolvers`, `Response.bytes()`…);
+`src/util/compat.js` las añade si faltan, en la página y en el worker de los PDF
+(`src/viewers/pdf-worker.js`). Al actualizar pdf.js hay que repetir la comprobación descrita en `CLAUDE.md`.
 
 ### Pendiente
 

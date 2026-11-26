@@ -1,3 +1,4 @@
+import './util/compat.js'; // parches para iOS 16/17: lo primero de todo
 import '@fontsource/cabin/latin-600.css'; // solo para la marca «Bethel»
 import { trackRoute } from './nav.js';
 import './styles/base.css';

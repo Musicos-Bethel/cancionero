@@ -55,6 +55,8 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(`${pkg.version} (${new Date().toISOString().slice(0, 10)})`),
   },
+  // pdf.js abre su worker como módulo ({ type: 'module' }).
+  worker: { format: 'es' },
   build: { target: ['es2020', 'safari15', 'chrome100'], chunkSizeWarningLimit: 1500 },
   plugins: [
     demoManifest(),
