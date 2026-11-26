@@ -560,7 +560,7 @@ export function SongView({ section, id, query, backHref }) {
       },
       'Solo letra',
     );
-    const fontBtn = h('button.cap-btn.text-btn.aa', { 'aria-label': 'Tamaño de letra', 'aria-expanded': 'false', onclick: () => toggleFont() }, h('span.a-small', 'A'), h('span.a-big', 'A'));
+    const fontBtn = h('button.cap-btn.text-btn.aa', { 'aria-label': 'Tamaño de letra', 'aria-expanded': 'false', onclick: () => toggleFont() }, h('span.aa-glyph', h('span.a-small', 'A'), h('span.a-big', 'A')));
     const fontCap = h(
       'div.glass-cap.font-cap',
       { hidden: true },
