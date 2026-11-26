@@ -177,7 +177,19 @@ dispositivo hasta que se cierra la app.
   - **Acordes encima:** como en papel (letra monoespaciada). «Estrofa 1», «Coro», «Puente»… en una línea sola son secciones. También se aceptan `[acordes]` dentro de la letra y directivas `{…}`.
   - **Vista previa:** con el lector real.
 - **Formato:** se guarda siempre en ChordPro (`.cho`). Las líneas con acordes demasiado juntos para ponerlos encima se dejan en ChordPro para no moverlos de su sílaba.
-- **Dónde se guarda:** de momento **solo en el dispositivo** (hasta la escritura en OneDrive, fase 2c). «Exportar .cho» descarga o comparte el archivo para subirlo a la carpeta del cancionero.
+- **Dónde se guarda** (tarjeta «Guardar en», encima de los botones):
+  - **Canción nueva:** en **OneDrive** (por defecto) o **solo en este dispositivo**. En OneDrive se elige la
+    carpeta (la del cancionero o una de sus categorías: Alabanzas, Himnos…; se propone la que coincida con
+    sus categorías) y se guarda como `.pro`, como el resto de la biblioteca de SongBook. La categoría que ya
+    da la carpeta no se repite como `{tag}`. No deja crear otra con el mismo título.
+  - **Canción de OneDrive:** se guarda en su mismo archivo, solo si nadie la ha cambiado desde la última
+    actualización (si no, avisa y no pisa nada; OneDrive guarda las versiones anteriores). Un `.txt` pasa a
+    `.pro` en la misma carpeta y el `.txt` va a la papelera.
+  - **Canción del dispositivo** (sale como «Local»): se guarda en el dispositivo y tiene **«Subir a
+    OneDrive»** (pide la carpeta). Si era una copia de una canción de OneDrive, la sube en su lugar.
+  - **Sin conexión:** ofrece guardarla en el dispositivo y subirla después.
+  - En la demostración, «OneDrive» es la OneDrive simulada del dispositivo.
+  - «Exportar .cho» descarga o comparte el archivo.
 - **Canciones compartidas:** editar una crea una copia en el dispositivo con el mismo nombre de archivo, que la sustituye allí (las listas y la batería la siguen encontrando). «Volver a la versión compartida» la deshace.
 - **Borrador** automático con recuperación, como en el editor de listas. «Borrar importadas» no borra las canciones creadas con el editor.
 
@@ -207,7 +219,8 @@ dispositivo hasta que se cierra la app.
   ```
   `x` platos, `o` tambores y bombo, en mayúscula con acento, `.` nada. También se leen cuadrículas sin espacios (`HH|x-x-x-x-|`).
 - **En el lector** los ritmos se ven como cuadrícula (× platos, ● tambores, acentos en dorado) en lugar de texto monoespaciado.
-- **Dónde se guarda:** igual que las canciones de voces: en el dispositivo (`local/Bateria/`), con «Exportar .cho», copia de una hoja compartida y borrador automático.
+- **Dónde se guarda:** igual que las canciones de voces (OneDrive o este dispositivo, «Subir a OneDrive»,
+  borrador automático). En OneDrive va a la carpeta de batería (`Partituras batería`) como `.pro`.
 
 ### PIN
 
@@ -280,13 +293,16 @@ biblioteca. Después funciona sin conexión con lo descargado, como con la demos
   archivos se descargan de la dirección temporal que da OneDrive, sin enviar el token.
 - **Listas y PIN del modo líder:** en `Aplicaciones/Cancionero Bethel/` (la carpeta que OneDrive crea para
   la app), con control de versiones y conflictos como en la demostración. En la carpeta de canciones la app
-  solo borra (cuando el líder lo pide). Una carpeta `Listas` dentro de la carpeta del cancionero no se usa.
+  solo escribe desde el modo líder: guardar con los editores y borrar canciones. Una carpeta `Listas`
+  dentro de la carpeta del cancionero no se usa.
 - **Eliminar canciones** (modo líder, con OneDrive): en una canción, «Más» → «Eliminar canción». Pide
   confirmación, avisa si está en alguna lista próxima y la borra de OneDrive para todos (va a la papelera
   de OneDrive, que la guarda 30 días). Solo borra ese archivo: la batería o los metales de la misma
   canción no. Si alguien la cambió en OneDrive desde la última actualización, no se borra. Hace falta
   conexión. Con una sesión iniciada con los permisos antiguos, avisa y ofrece volver a entrar.
-- **Canciones y hojas creadas con los editores:** siguen guardándose en el dispositivo (fase 2c).
+- **Canciones y hojas de los editores** (fase 2c, 26/11/2026): se crean y guardan en la carpeta del
+  cancionero (`writeSong`), con If-Match al editar y sin sobrescribir al crear. Ver «Dónde se guarda» en
+  los editores.
 - **Cambiar de origen** borra del dispositivo la biblioteca del origen anterior, los cambios pendientes y
   la sesión de modo líder (lo importado y lo creado con los editores se queda).
 - **Cerrar sesión:** *Ajustes → OneDrive → Cerrar sesión*. Lo descargado se queda.
@@ -443,7 +459,7 @@ Todo lo hecho hasta ahora está fusionado y publicado; no hay PR abiertos.
 | — | Metrónomo y desplazamiento según la duración | Publicada (PR #17) |
 | — | Botón «atrás» coherente con Android, sin bucles | Publicada (PR #18) |
 | — | Partituras PDF en iPhone/iPad con iOS 16 y 17 (parches de compatibilidad) | En revisión |
-| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | Pendiente (ya hay permiso `Files.ReadWrite`) |
+| 2c | Canciones y hojas de batería creadas en la app, a OneDrive | En revisión |
 
 ### Dispositivos antiguos
 
@@ -459,7 +475,8 @@ pdf.js 6 usa funciones que Safari 16–17.3 no trae (`Promise.withResolvers`, `R
   suena con el interruptor de silencio), botón atrás del Samsung, editor con el teclado del móvil y
   aceptación del permiso nuevo de Microsoft al entrar.
 - **Listas de SongBook (`.lst`):** leerlas como listas de la app; falta un archivo de ejemplo.
-- **Fase 2c:** guardar en `Cancionero` las canciones y hojas creadas en la app (SongBook también las vería).
+- **Fase 2c:** probar con la OneDrive real (crear, editar y subir una canción de prueba) y comprobar que
+  SongBook la ve.
 - Decidir si OneDrive pasa a ser el origen por defecto (ahora lo es la demostración).
 - Pendiente de decidir o confirmar con el líder: el PIN y quién lo tiene, la hora del culto del domingo
   (ahora 11:00), qué saxofón se usa (alto en Mi♭ o tenor en Si♭), el orden de las categorías (ahora

@@ -6,9 +6,11 @@ import { getAccessToken } from './onedrive-auth.js';
 /**
  * Origen OneDrive (Microsoft Graph). Usa las mismas rutas «lógicas» que la
  * demostración, relativas a la carpeta del cancionero:
- *   Voces/…, Bateria/…, Metales/…, Enlaces/…   → en la carpeta del cancionero (solo lectura)
+ *   Voces/…, Bateria/…, Metales/…, Enlaces/…   → en la carpeta del cancionero. Solo se escribe
+ *       ahí desde el modo líder: crear/guardar canciones con los editores (writeSong) y
+ *       borrar canciones (removeSong), si WRITE_TARGET.songs lo permite.
  *   Listas/…, ajustes-lider.json                → donde escribe el modo líder (WRITE_TARGET):
- *       appFolder: Aplicaciones/Cancionero Bethel/ (la app no puede tocar las canciones)
+ *       appFolder: Aplicaciones/Cancionero Bethel/
  *       library:   dentro de la carpeta del cancionero
  *
  * `deps` permite probarlo sin navegador (fetch y token simulados).
@@ -139,6 +141,24 @@ export function createOneDriveSource({
     return file.arrayBuffer();
   }
 
+  /** Sube un archivo de texto (con If-Match / sin sobrescribir) y devuelve su eTag nuevo. */
+  async function put(path, text, { ifMatch, ifNoneMatch } = {}) {
+    const headers = { 'Content-Type': 'text/plain; charset=utf-8' };
+    if (ifMatch) headers['If-Match'] = ifMatch;
+    const q = ifNoneMatch === '*' ? '?@microsoft.graph.conflictBehavior=fail' : '';
+    const res = await api(`${itemUrl(path)}/content${q}`, { method: 'PUT', headers, body: text });
+    if (res.status === 412) throw new ConflictError('changed', path);
+    if (res.status === 409) throw new ConflictError(ifNoneMatch === '*' ? 'exists' : 'changed', path);
+    if (res.status === 404 && ifMatch) throw new ConflictError('deleted', path);
+    if (res.status === 403) throw new PermissionError();
+    if (!res.ok) throw await graphError(res);
+    const meta = await res.json();
+    downloads.delete(path);
+    return { etag: meta.eTag };
+  }
+
+  const SONG_TEXT = /\.(pro|cho|chopro|chordpro|crd)$/i;
+
   return {
     id: 'onedrive',
     label: 'OneDrive',
@@ -189,20 +209,9 @@ export function createOneDriveSource({
      *  ifMatch: solo si su versión sigue siendo esa (si no, ConflictError)
      *  ifNoneMatch: '*' → solo si no existe todavía
      */
-    async writeText(path, text, { ifMatch, ifNoneMatch } = {}) {
+    async writeText(path, text, opts = {}) {
       if (!isWritePath(path)) throw new Error(`La app no puede escribir en «${path}».`);
-      const headers = { 'Content-Type': 'text/plain; charset=utf-8' };
-      if (ifMatch) headers['If-Match'] = ifMatch;
-      const q = ifNoneMatch === '*' ? '?@microsoft.graph.conflictBehavior=fail' : '';
-      const res = await api(`${itemUrl(path)}/content${q}`, { method: 'PUT', headers, body: text });
-      if (res.status === 412) throw new ConflictError('changed', path);
-      if (res.status === 409) throw new ConflictError(ifNoneMatch === '*' ? 'exists' : 'changed', path);
-      if (res.status === 404 && ifMatch) throw new ConflictError('deleted', path);
-      if (res.status === 403) throw new PermissionError();
-      if (!res.ok) throw await graphError(res);
-      const meta = await res.json();
-      downloads.delete(path);
-      return { etag: meta.eTag };
+      return put(path, text, opts);
     },
 
     async remove(path, { ifMatch } = {}) {
@@ -216,6 +225,18 @@ export function createOneDriveSource({
 
     /** ¿Se pueden borrar canciones de la carpeta del cancionero? */
     canDeleteSongs: !!target.songs,
+    /** ¿Se pueden crear y guardar canciones en la carpeta del cancionero? */
+    canWriteSongs: !!target.songs,
+
+    /**
+     * Crea o sustituye una canción de texto (ChordPro) en la carpeta del
+     * cancionero, solo desde los editores. ifNoneMatch '*' → no sobrescribe
+     * una que ya exista; ifMatch → solo si nadie la ha cambiado desde entonces.
+     */
+    async writeSong(path, text, opts = {}) {
+      if (!target.songs || isWritePath(path) || !SONG_TEXT.test(path)) throw new Error(`La app no puede escribir en «${path}».`);
+      return put(path, text, opts);
+    },
 
     /**
      * Borra un archivo (o la carpeta de una canción de imágenes) de la carpeta

@@ -480,3 +480,24 @@ button.dg-cell:focus-visible { outline: 2px solid var(--gold); outline-offset: -
 .add-sections { align-items: center; margin: 0 4px 12px; }
 .add-sections .set-desc { margin: 0 2px 0 0; }
 @media (max-width: 380px) { .route-head { grid-template-columns: 1fr; } }
+
+/* ===== Dónde se guarda (OneDrive o este dispositivo) ===== */
+.save-target { margin-top: 14px; padding-bottom: 12px; }
+.save-target .segmented { display: flex; width: 100%; max-width: 420px; }
+.save-target .segmented button { flex: 1; min-width: 0; }
+.save-target .set-desc { margin: -4px 0 12px; }
+.save-target .field:last-child { margin-bottom: 4px; }
+.field select {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fill);
+  padding: 0 12px;
+  color: var(--text);
+}
+.save-info { display: flex; gap: 10px; align-items: flex-start; color: var(--text-2); font-size: 15px; line-height: 1.35; }
+.save-info svg { flex: none; margin-top: 1px; color: var(--accent-ink); }
+.save-info strong { color: var(--text); font-weight: 600; }
+.save-info .path { overflow-wrap: anywhere; }
+.upload-btn { margin-top: 12px; }

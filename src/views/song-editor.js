@@ -19,6 +19,8 @@ import { isLeader } from '../leader/leader.js';
 import { requestLeader } from '../leader/leader-ui.js';
 import { shareOrDownload } from '../features/backup.js';
 import { timeAgo } from '../ui/format.js';
+import { canSaveToLibrary, libraryLabel, saveToLibrary, newSongPath, editPaths, withoutFolderTags, libraryErrorText } from '../library/save-song.js';
+import { saveTargetCard, pickFolder } from '../ui/save-target.js';
 
 const DRAFT_KEY = 'cancion-borrador';
 /** Origen de las canciones creadas con el editor (las importadas son 'local'). */
@@ -61,10 +63,13 @@ Escribe los acordes encima de la letra`;
  *
  *  id = null → canción nueva; id = id de una canción de voces → editarla.
  *
- * Mientras no haya escritura en OneDrive se guarda en este dispositivo
- * (origin 'local', source 'editor') y se puede exportar como .cho. Si se edita
- * una canción de la biblioteca compartida, la copia del dispositivo la sustituye
- * (mismo nombre de archivo) hasta que se borre.
+ * Dónde se guarda (26/11/2026):
+ *  - canción nueva: en OneDrive (por defecto, en la carpeta que se elija, como .pro)
+ *    o solo en este dispositivo (origin 'local', source 'editor');
+ *  - canción de OneDrive: en su mismo archivo (con If-Match);
+ *  - canción del dispositivo: en el dispositivo, con «Subir a OneDrive». Si
+ *    tapa una de la biblioteca (mismo nombre), al subirla la sustituye.
+ * Sin conexión se ofrece guardar en el dispositivo.
  */
 export function SongEditorView({ id }) {
   const lib = state.library;
@@ -115,11 +120,22 @@ export function SongEditorView({ id }) {
   const dirty = () => !same(draft, initial);
   let mode = readMode(); // 'chordpro' | 'plain' | 'preview'
 
+  // ---------- Dónde se guarda (OneDrive o este dispositivo)
+  const saveTarget = saveTargetCard({
+    kind: file?.origin === 'remote' ? 'remote' : isOwnLocal ? 'local' : 'new',
+    section: 'voces',
+    path: file?.path ?? '',
+    tags: draft.tags,
+    onUpload: () => upload(),
+    uploadLabel: sharedCopy ? `Subir mis cambios a ${libraryLabel()}` : undefined,
+  });
+
   // ---------- Borrador (por si se cierra la app a mitad)
   let saveTimer;
   function persistDraft() {
     clearTimeout(saveTimer);
     state.editingDirty = dirty();
+    saveTarget.setTags(draft.tags);
     saveTimer = setTimeout(() => {
       if (dirty()) db.kvSet(DRAFT_KEY, { id: id ?? null, draft, at: Date.now() });
       else db.kvDelete(DRAFT_KEY);
@@ -144,7 +160,12 @@ export function SongEditorView({ id }) {
     h(
       'header.page-head',
       h('h1', original ? 'Editar canción' : 'Nueva canción'),
-      h('p.page-sub', 'De momento se guarda en este dispositivo. Para compartirla, usa «Exportar .cho» y súbela a la carpeta del cancionero en OneDrive.'),
+      h(
+        'p.page-sub',
+        canSaveToLibrary()
+          ? `Abajo eliges si se guarda en ${libraryLabel()} (para toda la banda) o solo en este dispositivo.`
+          : 'Se guarda en este dispositivo. Para compartirla, usa «Exportar .cho» y súbela a la carpeta del cancionero en OneDrive.',
+      ),
     ),
     recover,
   );
@@ -386,11 +407,14 @@ export function SongEditorView({ id }) {
     paletteKey = k;
     const chip = (c, cls = '') =>
       h(`button.chord-chip${cls}`, { type: 'button', onpointerdown: keepFocus, onclick: () => insertAtCursor(`[${c}]`), 'aria-label': `Poner ${c}` }, c);
+    // replaceChildren escribiría «null» como texto: se quitan los huecos.
     palette.replaceChildren(
-      ...used.map((c) => chip(c)),
-      used.length && fromKey.length ? h('span.chip-sep', { 'aria-hidden': 'true' }) : null,
-      ...fromKey.map((c) => chip(c, '.from-key')),
-      h('button.chord-chip.add', { type: 'button', onclick: newChord }, icon('plus', { size: 16 }), 'Acorde'),
+      ...[
+        ...used.map((c) => chip(c)),
+        used.length && fromKey.length ? h('span.chip-sep', { 'aria-hidden': 'true' }) : null,
+        ...fromKey.map((c) => chip(c, '.from-key')),
+        h('button.chord-chip.add', { type: 'button', onclick: newChord }, icon('plus', { size: 16 }), 'Acorde'),
+      ].filter(Boolean),
     );
   }
   const toolbar = h(
@@ -399,8 +423,10 @@ export function SongEditorView({ id }) {
     palette,
   );
 
-  function fileText() {
-    return buildSongFile(draft, draft.body);
+  /** Texto del archivo. Con `path` de la biblioteca, sin repetir como {tag} la categoría que ya da su carpeta. */
+  function fileText(path) {
+    const d = path ? { ...draft, tags: withoutFolderTags(draft.tags, path) } : draft;
+    return buildSongFile(d, d.body);
   }
   function renderPane() {
     modeSeg.replaceChildren(
@@ -485,7 +511,12 @@ export function SongEditorView({ id }) {
     // y la batería siguen encontrándola); una nueva toma el título.
     const name = original ? original.name : safeName(draft.title);
     const newId = normalize(name);
+    const toLibrary = saveTarget.target() === 'library';
     if (!original && lib.byId.voces.has(newId)) {
+      if (toLibrary) {
+        msg.textContent = 'Ya hay una canción con este título. Cambia el título o abre la existente y edítala.';
+        return;
+      }
       const ok = await confirmDialog({
         title: 'Ya existe una canción con este título',
         text: 'Si guardas, en este dispositivo se verá la tuya en lugar de la existente.',
@@ -495,38 +526,109 @@ export function SongEditorView({ id }) {
     }
     saveBtn.disabled = true;
     try {
-      const text = fileText();
-      const path = isOwnLocal ? file.path : `local/Voces/${name}.cho`;
-      if (isOwnLocal && file.ext !== 'cho') await db.deleteFiles([file.path]);
-      const finalPath = isOwnLocal && file.ext !== 'cho' ? path.replace(/\.[^./]+$/, '.cho') : path;
-      await db.putFiles([
-        {
-          path: finalPath,
-          origin: 'local',
-          source: EDITOR_SOURCE,
-          section: 'voces',
-          ext: 'cho',
-          kind: 'text',
-          depth: 1,
-          etag: String(Date.now()),
-          size: text.length,
-          text,
-          meta: songMeta(text, 'cho'),
-        },
-      ]);
-      await dropDraft();
-      initial = structuredClone(draft);
-      await reloadLibrary();
-      toast(original ? 'Cambios guardados en este dispositivo' : 'Canción guardada en este dispositivo');
-      // Editando: se vuelve a la canción (sin dejar el editor en el historial).
-      // Nueva: el editor se sustituye por la canción.
-      const target = link(`/cancion/voces/${encodeURIComponent(newId)}`);
-      if (original) goBackTo(target, backHref);
-      else replaceTo(target);
+      if (toLibrary) {
+        if (file?.origin === 'remote') {
+          const { path, replaces } = editPaths(file);
+          await saveToLibrary({ path, text: fileText(path), create: !!replaces, ifMatch: file.etag, replaces, replacesEtag: file.etag });
+        } else {
+          const path = newSongPath('voces', saveTarget.folder(), name);
+          await saveToLibrary({ path, text: fileText(path), create: true });
+        }
+      } else {
+        await saveLocal(name);
+      }
+      await done(newId, toLibrary ? (original ? `Cambios guardados en ${libraryLabel()}` : `Canción guardada en ${libraryLabel()}`) : original ? 'Cambios guardados en este dispositivo' : 'Canción guardada en este dispositivo');
+    } catch (e) {
+      if (e?.name !== 'OfflineError') console.error(e);
+      saveBtn.disabled = false;
+      if (toLibrary && e?.name === 'OfflineError') {
+        const ok = await confirmDialog({
+          title: 'Sin conexión',
+          text: `No se puede guardar en ${libraryLabel()} ahora. ¿La guardas en este dispositivo? Cuando vuelva la conexión, ábrela en el editor y toca «Subir a ${libraryLabel()}».`,
+          confirm: 'Guardar en el dispositivo',
+        });
+        if (!ok) return;
+        saveBtn.disabled = true;
+        try {
+          await saveLocal(name);
+          await done(newId, 'Guardada en este dispositivo');
+        } catch (e2) {
+          console.error(e2);
+          toast('No se pudo guardar: ' + (e2.message || e2));
+          saveBtn.disabled = false;
+        }
+        return;
+      }
+      msg.className = 'form-msg error';
+      msg.textContent = 'No se pudo guardar: ' + libraryErrorText(e);
+    }
+  }
+
+  /** Guarda en este dispositivo (origin 'local'). */
+  async function saveLocal(name) {
+    const text = fileText();
+    const path = isOwnLocal ? file.path : `local/Voces/${name}.cho`;
+    if (isOwnLocal && file.ext !== 'cho') await db.deleteFiles([file.path]);
+    const finalPath = isOwnLocal && file.ext !== 'cho' ? path.replace(/\.[^./]+$/, '.cho') : path;
+    await db.putFiles([
+      {
+        path: finalPath,
+        origin: 'local',
+        source: EDITOR_SOURCE,
+        section: 'voces',
+        ext: 'cho',
+        kind: 'text',
+        depth: 1,
+        etag: String(Date.now()),
+        size: text.length,
+        text,
+        meta: songMeta(text, 'cho'),
+      },
+    ]);
+    await reloadLibrary();
+  }
+
+  /** Tras guardar: fuera borrador y a la canción (sin dejar el editor en el historial). */
+  async function done(newId, message) {
+    await dropDraft();
+    initial = structuredClone(draft);
+    toast(message);
+    const target = link(`/cancion/voces/${encodeURIComponent(newId)}`);
+    if (original) goBackTo(target, backHref);
+    else replaceTo(target);
+  }
+
+  /** Sube a la biblioteca compartida una canción guardada solo en este dispositivo. */
+  async function upload() {
+    const err = validateSong(draft);
+    msg.className = 'form-msg error';
+    msg.textContent = err ?? '';
+    if (err) return;
+    const label = libraryLabel();
+    let opts;
+    if (sharedCopy) {
+      const ok = await confirmDialog({
+        title: `¿Subir tus cambios a ${label}?`,
+        text: 'Sustituyen a la versión que ve la banda (OneDrive guarda la anterior por si hay que recuperarla).',
+        confirm: 'Subir',
+      });
+      if (!ok) return;
+      const { path, replaces } = editPaths(sharedCopy);
+      opts = { path, create: !!replaces, ifMatch: sharedCopy.etag, replaces, replacesEtag: sharedCopy.etag };
+    } else {
+      const folder = await pickFolder({ section: 'voces', title: `Subir a ${label}`, text: 'Elige la carpeta. Después la verá toda la banda y dejará de estar solo en este dispositivo.', tags: draft.tags });
+      if (folder == null) return;
+      opts = { path: newSongPath('voces', folder, original.name), create: true };
+    }
+    saveBtn.disabled = true;
+    try {
+      await saveToLibrary({ ...opts, text: fileText(opts.path), dropLocal: [file.path] });
+      await done(original.id, `Canción subida a ${label}`);
     } catch (e) {
       console.error(e);
-      toast('No se pudo guardar: ' + (e.message || e));
       saveBtn.disabled = false;
+      msg.className = 'form-msg error';
+      msg.textContent = 'No se pudo subir: ' + libraryErrorText(e);
     }
   }
 
@@ -560,6 +662,7 @@ export function SongEditorView({ id }) {
     h('div.items-head', h('h3.section-title', 'Letra y acordes'), modeSeg),
     help,
     pane,
+    saveTarget.el,
     msg,
     h(
       'div.item-actions',

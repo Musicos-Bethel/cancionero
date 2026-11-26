@@ -14,8 +14,9 @@ App publicada: https://musicos-bethel.github.io/cancionero/
   (`src/sources/onedrive.js`). La demostración sigue siendo el origen por defecto.
 - Permiso `Files.ReadWrite` (decidido por Nathanael el 23/11/2026, para eliminar canciones). Las listas
   y el PIN se escriben en la carpeta de la app (`Aplicaciones/Cancionero Bethel/`). En la carpeta de
-  canciones la app solo borra, cuando el líder lo pide y con confirmación (`removeSong`). No escribas
-  ni borres nada más ahí sin que Nathanael lo pida.
+  canciones la app solo escribe desde el modo líder: borrar con confirmación (`removeSong`) y guardar
+  canciones y hojas de los editores (`writeSong`, decidido por Nathanael el 26/11/2026: nuevas como `.pro`
+  sin sobrescribir; editadas con If-Match). No escribas ni borres nada más ahí sin que Nathanael lo pida.
 - Pruebas sin Microsoft: `tests/helpers/fake-drive.js` simula OneDrive (Graph y descargas).
 
 ## Reglas
@@ -54,4 +55,5 @@ App publicada: https://musicos-bethel.github.io/cancionero/
 - **No hay que tocar:**
   - Los tonos de listas y voces son de concierto; los metales se transportan
     (`writtenOffset` en `src/library/library.js`).
-  - Las canciones creadas con el editor van con `origin: 'local'` y `source: 'editor'`.
+  - Las canciones que el editor guarda solo en el dispositivo van con `origin: 'local'` y
+    `source: 'editor'`; las guardadas en OneDrive, como cualquier archivo de OneDrive (`origin: 'remote'`).
